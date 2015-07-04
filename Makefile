@@ -17,25 +17,35 @@
 #
 
 
-.PHONY: all
-all: patch config
+all: target
+
+target: patch openwrt-master/.config
+	make -C openwrt-master
 
 openwrt-master:
 	@echo
 	@echo fetching openwrt...
 	curl -L https://github.com/rest-switch/openwrt/archive/master.tar.gz | tar xz
 
-.PHONY: patch
 patch: openwrt-master
 	@echo
 	@echo applying patch files to openwrt...
 	cp -R files/. openwrt-master/
 
-.PHONY: config
-config: openwrt-master
-	@echo 'CONFIG_TARGET_ramips=y' > 'openwrt-master/.config'
-	@echo 'CONFIG_TARGET_ramips_rt305x=y' >> 'openwrt-master/.config'
-	@echo 'CONFIG_TARGET_ramips_rt305x_HLK_RM04=y' >> 'openwrt-master/.config'
+clean:
+	make -C openwrt-master clean
+	rm -f openwrt-master/.config
+
+distclean:
+	rm -rf openwrt-master
+
+config: openwrt-master/.config
+	rm -f 'openwrt-master/.config'
+
+openwrt-master/.config: openwrt-master
+	$(call cfg_enable,'CONFIG_TARGET_ramips')
+	$(call cfg_enable,'CONFIG_TARGET_ramips_rt305x')
+	$(call cfg_enable,'CONFIG_TARGET_ramips_rt305x_HLK_RM04')
 	make -C openwrt-master defconfig
 
 	$(call cfg_enable,'CONFIG_PACKAGE_a140808')
@@ -66,3 +76,6 @@ cfg_disable = \
 	@echo disabling: $(1); \
 	grep -q $(1) 'openwrt-master/.config' || echo '$(1)=y' >> 'openwrt-master/.config'; \
 	sed -i.old 's/$(1)=.*/\# $(1) is not set/g' 'openwrt-master/.config';
+
+.PHONY: all target patch config clean distclean
+
