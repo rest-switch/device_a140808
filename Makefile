@@ -16,11 +16,14 @@
 # Author: John Clark (johnc@restswitch.com)
 #
 
+TARGET = bin/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 
-all: target
+all: $(TARGET)
 
-target: patch openwrt-master/.config
+$(TARGET): patch openwrt-master/.config
 	make -C openwrt-master
+	@test -d bin || mkdir bin
+	@cp openwrt-master/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin bin
 
 openwrt-master:
 	@echo
@@ -34,7 +37,7 @@ patch: openwrt-master
 
 clean:
 	make -C openwrt-master clean
-	rm -f openwrt-master/.config
+	rm -rf bin openwrt-master/.config
 
 distclean:
 	rm -rf openwrt-master
