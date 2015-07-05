@@ -1,2 +1,5 @@
+*.o
+*.bin
+
 bin
 openwrt-master
