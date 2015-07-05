@@ -40,7 +40,7 @@ clean:
 	rm -rf bin openwrt-master/.config
 
 distclean:
-	rm -rf openwrt-master
+	rm -rf bin openwrt-master
 
 config: openwrt-master/.config
 	rm -f 'openwrt-master/.config'
