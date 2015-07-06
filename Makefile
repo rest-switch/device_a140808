@@ -16,36 +16,94 @@
 # Author: John Clark (johnc@restswitch.com)
 #
 
-TARGET = bin/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+OUTBIN    := bin
+OWRT_ROOT := openwrt-master
+OWRT_CFG  := $(OWRT_ROOT)/.config
+PWFILE    := $(OWRT_ROOT)/package/base-files/files/etc/shadow
+UBOOT     := firmware/hlk-rm04_uboot-50000.bin
+SERNUM    := $(OUTBIN)/serialnum
+MAC2BIN   := $(OUTBIN)/mac2bin
+TARGET    := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+
+OWRT_SRC_URL := https://github.com/rest-switch/openwrt/archive/master.tar.gz
+
+# sanitize inputs
+MAC    :=  $(strip $(mac))
+ROOTPW := "$(strip $(rootpw))"
+
 
 all: $(TARGET)
 
-$(TARGET): patch openwrt-master/.config
-	make -C openwrt-master
-	@test -d bin || mkdir bin
-	@cp openwrt-master/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin bin
+$(TARGET): patch $(OWRT_CFG)
+   ifneq ($(ROOTPW),)
+     ifneq (0,$(shell pwhash=$$(openssl passwd -1 "$(ROOTPW)") && awk 'BEGIN {OFS=FS=":"} $$1=="root" {$$2="'"$${pwhash}"'"} {print}' $(PWFILE) > $(PWFILE).tmp && mv $(PWFILE).tmp $(PWFILE); echo $$?))
+	$(error error: Failed to set the password for the root user.)
+     else
+	@echo "root password set"
+     endif
+   endif
 
-openwrt-master:
+	make -C $(OWRT_ROOT)
+	@test -d $(OUTBIN) || mkdir $(OUTBIN)
+	@cp $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin $(OUTBIN)
+
+image: $(TARGET) $(SERNUM) $(MAC2BIN)
+    ifeq ($(MAC),)
+	$(error error: Image target requires a MAC address to be specified: mac=aabbccddeeff)
+    endif
+
+    ifneq (0,$(shell echo "$(MAC)" | grep -iq '[0-9a-f]\{12\}'; echo $$?))
+	$(error error: The MAC address "$(MAC)" is invalid. A valid MAC address must be 12 hex chars: mac=aabbccddeeff)
+    endif
+
+	$(eval MAC2 := $(shell printf "%x" $$((0x$(MAC) + 1))))
+	$(eval DEVID := $(shell $(SERNUM)))
+	$(eval IMGFILE := a140808_$(DEVID).bin)
+	@echo
+	@echo "  building image file..."
+	@echo "    Image File: $(IMGFILE)"
+	@echo "     Device ID: $(DEVID)"
+	@echo "         MAC 1: $(MAC)"
+	@echo "         MAC 2: $(MAC2)"
+	@echo
+	@echo
+
+	cp $(UBOOT) $(OUTBIN)/$(IMGFILE)
+	$(MAC2BIN) $(MAC)  | dd bs=1 of=$(OUTBIN)/$(IMGFILE) count=6 seek=262148 conv=notrunc
+	$(MAC2BIN) $(MAC)  | dd bs=1 of=$(OUTBIN)/$(IMGFILE) count=6 seek=262184 conv=notrunc
+	$(MAC2BIN) $(MAC2) | dd bs=1 of=$(OUTBIN)/$(IMGFILE) count=6 seek=262190 conv=notrunc
+	cat $(TARGET) >> $(OUTBIN)/$(IMGFILE)
+
+$(SERNUM):
+	make -C src/util/serialnum
+	mv src/util/serialnum/serialnum $(OUTBIN)
+
+$(MAC2BIN):
+	make -C src/util/mac2bin
+	mv src/util/mac2bin/mac2bin $(OUTBIN)
+
+$(OWRT_ROOT):
 	@echo
 	@echo fetching openwrt...
-	curl -L https://github.com/rest-switch/openwrt/archive/master.tar.gz | tar xz
+	curl -L $(OWRT_SRC_URL) | tar xz
 
-patch: openwrt-master
+patch: $(OWRT_ROOT)
 	@echo
 	@echo applying patch files to openwrt...
-	cp -R files/. openwrt-master/
+	cp -R files/. $(OWRT_ROOT)
 
 clean:
-	make -C openwrt-master clean
-	rm -rf bin openwrt-master/.config
+	make -C $(OWRT_ROOT) clean
+	make -C src/util/serialnum clean
+	make -C src/util/mac2bin clean
+	rm -rf $(OUTBIN) $(OWRT_CFG)
 
 distclean:
-	rm -rf bin openwrt-master
+	make -C src/util/serialnum clean
+	make -C src/util/mac2bin clean
+	rm -rf $(OUTBIN) $(OWRT_ROOT)
 
-config: openwrt-master/.config
-	rm -f 'openwrt-master/.config'
-
-openwrt-master/.config: openwrt-master
+$(OWRT_CFG): $(OWRT_ROOT)
 	$(call cfg_enable,'CONFIG_TARGET_ramips')
 	$(call cfg_enable,'CONFIG_TARGET_ramips_rt305x')
 	$(call cfg_enable,'CONFIG_TARGET_ramips_rt305x_HLK_RM04')
@@ -72,13 +130,12 @@ openwrt-master/.config: openwrt-master
 
 cfg_enable = \
 	@echo enabling: $(1); \
-	grep -q $(1) 'openwrt-master/.config' || echo '\# $(1)' >> 'openwrt-master/.config'; \
-	sed -i.old 's/\# $(1).*/$(1)=y/g' 'openwrt-master/.config';
+	grep -q $(1) $(OWRT_CFG) || echo '\# $(1)' >> $(OWRT_CFG); \
+	sed -i.old 's/\# $(1).*/$(1)=y/g' $(OWRT_CFG);
 
 cfg_disable = \
 	@echo disabling: $(1); \
-	grep -q $(1) 'openwrt-master/.config' || echo '$(1)=y' >> 'openwrt-master/.config'; \
-	sed -i.old 's/$(1)=.*/\# $(1) is not set/g' 'openwrt-master/.config';
+	grep -q $(1) $(OWRT_CFG) || echo '$(1)=y' >> $(OWRT_CFG); \
+	sed -i.old 's/$(1)=.*/\# $(1) is not set/g' $(OWRT_CFG);
 
 .PHONY: all target patch config clean distclean
-
