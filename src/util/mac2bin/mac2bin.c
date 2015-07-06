@@ -25,7 +25,7 @@ void printbin(const int val)
 {
     const char h = ((val >> 8) & 0x00ff);
     const char l = (val & 0x00ff);
-    printf("%c%c", l, h);
+    printf("%c%c", h, l);
 }
 
 int main(int argc, char** argv)
