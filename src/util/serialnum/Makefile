@@ -17,8 +17,8 @@
 #
 
 TARGET = serialnum
-TARGET_SRC = b32coder.c serialnum.c
-TARGET_OBJ = $(TARGET_SRC:.c=.o)
+SRCS   = serialnum.c b32coder.c
+OBJS   = $(SRCS:.c=.o)
 
 CC = gcc
 CFLAGS = -Wall -g -std=c99
@@ -33,12 +33,12 @@ LFLAGS = -L../lib
 
 # libraries to link
 #   -lmylib for libmylib.so and -lm for libm.so
-LIBS = -lcrypto
+LIBS =
 
 all: $(TARGET)
 
-$(TARGET): $(TARGET_OBJ)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $(TARGET) $(TARGET_OBJ) $(LFLAGS) $(LIBS)
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LFLAGS) $(LIBS)
 	@echo "\n\tTarget \"$(TARGET)\" has been compiled\n"
 
 # this is a suffix replacement rule for building .o's from .c's
