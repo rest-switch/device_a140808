@@ -70,9 +70,12 @@ image: $(TARGET) $(SERNUM) $(MAC2BIN)
 	@echo
 
 	cp $(UBOOT) $(OUTBIN)/$(IMGFILE)
+	# mac addresses
 	$(MAC2BIN) $(MAC)  | dd bs=1 of=$(OUTBIN)/$(IMGFILE) count=6 seek=262148 conv=notrunc
 	$(MAC2BIN) $(MAC)  | dd bs=1 of=$(OUTBIN)/$(IMGFILE) count=6 seek=262184 conv=notrunc
 	$(MAC2BIN) $(MAC2) | dd bs=1 of=$(OUTBIN)/$(IMGFILE) count=6 seek=262190 conv=notrunc
+	# serial number
+	@echo -n $(DEVID)  | dd bs=1 of=$(OUTBIN)/$(IMGFILE) count=9 seek=262407 conv=notrunc
 	cat $(TARGET) >> $(OUTBIN)/$(IMGFILE)
 
 $(SERNUM):
