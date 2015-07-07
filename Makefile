@@ -16,14 +16,15 @@
 # Author: John Clark (johnc@restswitch.com)
 #
 
-OUTBIN    := bin
-OWRT_ROOT := openwrt-master
-OWRT_CFG  := $(OWRT_ROOT)/.config
-PWFILE    := $(OWRT_ROOT)/package/base-files/files/etc/shadow
-UBOOT     := firmware/hlk-rm04_uboot-50000.bin
-SERNUM    := $(OUTBIN)/serialnum
-MAC2BIN   := $(OUTBIN)/mac2bin
-TARGET    := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+OUTBIN     := bin
+OWRT_ROOT  := openwrt-master
+OWRT_CFG   := $(OWRT_ROOT)/.config
+OWRT_FEEDS := $(OWRT_ROOT)/feeds
+PWFILE     := $(OWRT_ROOT)/package/base-files/files/etc/shadow
+UBOOT      := firmware/hlk-rm04_uboot-50000.bin
+SERNUM     := $(OUTBIN)/serialnum
+MAC2BIN    := $(OUTBIN)/mac2bin
+TARGET     := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 
 OWRT_SRC_URL := https://github.com/rest-switch/openwrt/archive/master.tar.gz
 
@@ -34,8 +35,8 @@ ROOTPW := "$(strip $(rootpw))"
 
 all: $(TARGET)
 
-$(TARGET): patch $(OWRT_CFG)
-   ifneq ($(ROOTPW),)
+$(TARGET): $(OWRT_FEEDS) patch $(OWRT_CFG)
+   ifneq ($(ROOTPW),"")
      ifneq (0,$(shell pwhash=$$(openssl passwd -1 "$(ROOTPW)") && awk 'BEGIN {OFS=FS=":"} $$1=="root" {$$2="'"$${pwhash}"'"} {print}' $(PWFILE) > $(PWFILE).tmp && mv $(PWFILE).tmp $(PWFILE); echo $$?))
 	$(error error: Failed to set the password for the root user.)
      else
@@ -48,7 +49,7 @@ $(TARGET): patch $(OWRT_CFG)
 	@cp $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin $(OUTBIN)
 
 image: $(TARGET) $(SERNUM) $(MAC2BIN)
-    ifeq ($(MAC),)
+    ifeq ($(MAC),"")
 	$(error error: Image target requires a MAC address to be specified: mac=aabbccddeeff)
     endif
 
@@ -89,8 +90,14 @@ $(OWRT_ROOT):
 
 patch: $(OWRT_ROOT)
 	@echo
-	@echo applying patch files to openwrt...
+	@echo applying a140808 updates to openwrt...
 	cp -R files/. $(OWRT_ROOT)
+
+$(OWRT_FEEDS): $(OWRT_ROOT)
+	@echo
+	@echo applying feeds to openwrt...
+	$(OWRT_ROOT)/scripts/feeds update -a
+	$(OWRT_ROOT)/scripts/feeds install -a
 
 clean:
 	make -C $(OWRT_ROOT) clean
