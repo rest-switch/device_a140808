@@ -114,13 +114,15 @@ distclean:
 	make -C src/util/mac2bin clean
 	rm -rf $(OUTBIN) $(OWRT_ROOT)
 
-config: $(OWRT_CFG)
-$(OWRT_CFG): $(OWRT_ROOT)
+config $(OWRT_CFG): $(OWRT_ROOT) config_a config_b
+
+config_a:
 	$(call cfg_enable,'CONFIG_TARGET_ramips')
 	$(call cfg_enable,'CONFIG_TARGET_ramips_rt305x')
 	$(call cfg_enable,'CONFIG_TARGET_ramips_rt305x_HLK_RM04')
-	make -C openwrt-master defconfig
+	make -C $(OWRT_ROOT) defconfig
 
+config_b:
 	$(call cfg_enable,'CONFIG_PACKAGE_a140808')
 	$(call cfg_disable,'CONFIG_PACKAGE_firewall')
 	$(call cfg_disable,'CONFIG_PACKAGE_iptables')
@@ -137,8 +139,7 @@ $(OWRT_CFG): $(OWRT_ROOT)
 	$(call cfg_disable,'CONFIG_PACKAGE_uhttpd-mod-lua')
 	$(call cfg_disable,'CONFIG_PACKAGE_uhttpd-mod-tls')
 	$(call cfg_disable,'CONFIG_PACKAGE_uhttpd-mod-ubus')
-
-	make -C openwrt-master oldconfig
+	make -C $(OWRT_ROOT) oldconfig
 
 cfg_enable = \
 	@echo enabling: $(1); \
@@ -150,4 +151,4 @@ cfg_disable = \
 	grep -q $(1) $(OWRT_CFG) || echo '$(1)=y' >> $(OWRT_CFG); \
 	sed -i.old 's/$(1)=.*/\# $(1) is not set/g' $(OWRT_CFG);
 
-.PHONY: all image patch config clean distclean
+.PHONY: all image patch config config_a config_b clean distclean
