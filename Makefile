@@ -20,6 +20,7 @@ OUTBIN     := bin
 OWRT_ROOT  := openwrt-master
 OWRT_CFG   := $(OWRT_ROOT)/.config
 OWRT_FEEDS := $(OWRT_ROOT)/feeds
+OWRT_TGT   := $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 PWFILE     := $(OWRT_ROOT)/package/base-files/files/etc/shadow
 UBOOT      := firmware/hlk-rm04_uboot-50000.bin
 SERNUM     := $(OUTBIN)/serialnum
@@ -46,7 +47,7 @@ $(TARGET): $(OWRT_FEEDS) patch $(OWRT_CFG)
 
 	make -C $(OWRT_ROOT)
 	@test -d $(OUTBIN) || mkdir $(OUTBIN)
-	@cp $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin $(OUTBIN)
+	@cp $(OWRT_TGT) $(OUTBIN)
 
 image: $(TARGET) $(SERNUM) $(MAC2BIN)
     ifeq ($(MAC),"")
@@ -113,6 +114,7 @@ distclean:
 	make -C src/util/mac2bin clean
 	rm -rf $(OUTBIN) $(OWRT_ROOT)
 
+config: $(OWRT_CFG)
 $(OWRT_CFG): $(OWRT_ROOT)
 	$(call cfg_enable,'CONFIG_TARGET_ramips')
 	$(call cfg_enable,'CONFIG_TARGET_ramips_rt305x')
@@ -148,4 +150,4 @@ cfg_disable = \
 	grep -q $(1) $(OWRT_CFG) || echo '$(1)=y' >> $(OWRT_CFG); \
 	sed -i.old 's/$(1)=.*/\# $(1) is not set/g' $(OWRT_CFG);
 
-.PHONY: all target patch config clean distclean
+.PHONY: all image patch config clean distclean
