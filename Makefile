@@ -16,18 +16,18 @@
 # Author: John Clark (johnc@restswitch.com)
 #
 
-OUTBIN     := bin
-OWRT_ROOT  := openwrt-master
-OWRT_CFG   := $(OWRT_ROOT)/.config
-OWRT_FEEDS := $(OWRT_ROOT)/feeds
-OWRT_TGT   := $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
-PWFILE     := $(OWRT_ROOT)/package/base-files/files/etc/shadow
-UBOOT      := firmware/hlk-rm04_uboot-50000.bin
-SERNUM     := $(OUTBIN)/serialnum
-MAC2BIN    := $(OUTBIN)/mac2bin
-TARGET     := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
-
 OWRT_SRC_URL := https://github.com/rest-switch/openwrt/archive/master.tar.gz
+OWRT_ROOT    := openwrt-master
+OWRT_FEEDS   := $(OWRT_ROOT)/feeds
+OWRT_VER     := $(OWRT_ROOT)/version
+OWRT_TGT     := $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+PWFILE       := $(OWRT_ROOT)/package/base-files/files/etc/shadow
+UBOOT        := firmware/hlk-rm04_uboot-50000.bin
+OUTBIN       := bin
+SERNUM       := $(OUTBIN)/serialnum
+MAC2BIN      := $(OUTBIN)/mac2bin
+TARGET       := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+
 
 # sanitize inputs
 MAC    :=  $(strip $(mac))
@@ -36,7 +36,7 @@ ROOTPW := "$(strip $(rootpw))"
 
 all: $(TARGET)
 
-$(TARGET): $(OWRT_FEEDS) patch $(OWRT_CFG)
+$(TARGET): feeds patch
    ifneq ($(ROOTPW),"")
      ifneq (0,$(shell pwhash=$$(openssl passwd -1 "$(ROOTPW)") && awk 'BEGIN {OFS=FS=":"} $$1=="root" {$$2="'"$${pwhash}"'"} {print}' $(PWFILE) > $(PWFILE).tmp && mv $(PWFILE).tmp $(PWFILE); echo $$?))
 	$(error error: Failed to set the password for the root user.)
@@ -49,7 +49,7 @@ $(TARGET): $(OWRT_FEEDS) patch $(OWRT_CFG)
 	@test -d $(OUTBIN) || mkdir $(OUTBIN)
 	@cp $(OWRT_TGT) $(OUTBIN)
 
-image: $(TARGET) $(SERNUM) $(MAC2BIN)
+image: | $(TARGET) $(SERNUM) $(MAC2BIN)
     ifeq ($(MAC),"")
 	$(error error: Image target requires a MAC address to be specified: mac=aabbccddeeff)
     endif
@@ -92,12 +92,12 @@ $(OWRT_ROOT):
 	@echo fetching openwrt...
 	curl -L $(OWRT_SRC_URL) | tar xz
 
-patch: $(OWRT_ROOT)
+patch: | $(OWRT_ROOT) $(OWRT_VER)
 	@echo
 	@echo applying a140808 updates to openwrt...
 	cp -R files/. $(OWRT_ROOT)
 
-$(OWRT_FEEDS): $(OWRT_ROOT)
+feeds: | $(OWRT_ROOT) $(OWRT_FEEDS)
 	@echo
 	@echo applying feeds to openwrt...
 	$(OWRT_ROOT)/scripts/feeds update -a
@@ -114,41 +114,4 @@ distclean:
 	make -C src/util/mac2bin clean
 	rm -rf $(OUTBIN) $(OWRT_ROOT)
 
-config $(OWRT_CFG): $(OWRT_ROOT) config_a config_b
-
-config_a:
-	$(call cfg_enable,'CONFIG_TARGET_ramips')
-	$(call cfg_enable,'CONFIG_TARGET_ramips_rt305x')
-	$(call cfg_enable,'CONFIG_TARGET_ramips_rt305x_HLK_RM04')
-	make -C $(OWRT_ROOT) defconfig
-
-config_b:
-	$(call cfg_enable,'CONFIG_PACKAGE_a140808')
-	$(call cfg_disable,'CONFIG_PACKAGE_firewall')
-	$(call cfg_disable,'CONFIG_PACKAGE_iptables')
-	$(call cfg_disable,'CONFIG_PACKAGE_opkg')
-	$(call cfg_disable,'CONFIG_PACKAGE_ppp')
-	$(call cfg_enable,'CONFIG_PACKAGE_nano')
-#	$(call cfg_enable,'CONFIG_PACKAGE_uhttpd')
-
-	# new items
-	$(call cfg_disable,'CONFIG_PACKAGE_iptables-snmp')
-	$(call cfg_disable,'CONFIG_PACKAGE_libwebsockets-examples')
-	$(call cfg_disable,'CONFIG_PACKAGE_ppp-multilink')
-	$(call cfg_disable,'CONFIG_PACKAGE_uhttpd_debug')
-	$(call cfg_disable,'CONFIG_PACKAGE_uhttpd-mod-lua')
-	$(call cfg_disable,'CONFIG_PACKAGE_uhttpd-mod-tls')
-	$(call cfg_disable,'CONFIG_PACKAGE_uhttpd-mod-ubus')
-	make -C $(OWRT_ROOT) oldconfig
-
-cfg_enable = \
-	@echo enabling: $(1); \
-	grep -q $(1) $(OWRT_CFG) || echo '\# $(1)' >> $(OWRT_CFG); \
-	sed -i.old 's/\# $(1).*/$(1)=y/g' $(OWRT_CFG);
-
-cfg_disable = \
-	@echo disabling: $(1); \
-	grep -q $(1) $(OWRT_CFG) || echo '$(1)=y' >> $(OWRT_CFG); \
-	sed -i.old 's/$(1)=.*/\# $(1) is not set/g' $(OWRT_CFG);
-
-.PHONY: all image patch config config_a config_b clean distclean
+.PHONY: all image patch feeds clean distclean
