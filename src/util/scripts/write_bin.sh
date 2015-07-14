@@ -28,8 +28,8 @@ GENSERIAL="${MYDIR}/../../../bin/serialnum"
 # update mac address <mac> <target>
 #
 update_mac() {
-    local mac1=$1
-    local target=$2
+    local mac1="$1"
+    local target="$2"
 
     echo "${mac1}" | grep -iq '[0-9a-f]\{12\}'
     if [ $? -ne 0 ]; then
@@ -46,9 +46,9 @@ update_mac() {
     echo "    MAC 2: ${mac2}"
     echo
     echo
-    ${MAC2BIN} ${mac1} | dd bs=1 of="${target}" count=6 seek=262148 conv=notrunc
-    ${MAC2BIN} ${mac1} | dd bs=1 of="${target}" count=6 seek=262184 conv=notrunc
-    ${MAC2BIN} ${mac2} | dd bs=1 of="${target}" count=6 seek=262190 conv=notrunc
+    "${MAC2BIN}" "${mac1}" | dd bs=1 of="${target}" count=6 seek=262148 conv=notrunc
+    "${MAC2BIN}" "${mac1}" | dd bs=1 of="${target}" count=6 seek=262184 conv=notrunc
+    "${MAC2BIN}" "${mac2}" | dd bs=1 of="${target}" count=6 seek=262190 conv=notrunc
 }
 
 
@@ -56,16 +56,20 @@ update_mac() {
 # update device id <serial> <target>
 #
 update_devid() {
-    local serial=$1
-    local target=$2
+    local serial="$1"
+    local target="$2"
+
+    local new_target="$(echo "${target}" | sed "s/_[[:alnum:]]\{9\}.bin/_${serial}.bin/")"
 
     echo
     echo "  Updating device id for image file: ${target}"
     echo "    Serial Number: ${serial}"
+    echo "    New File Name: ${new_target}"
     echo
     echo
 
-    echo ${serial} | dd bs=1 of="${target}" count=9 seek=262407 conv=notrunc
+    echo "${serial}" | dd bs=1 of="${target}" count=9 seek=262407 conv=notrunc
+    mv "${target}" "${new_target}"
 }
 
 
@@ -73,7 +77,7 @@ update_devid() {
 # report device id and mac addresses <target>
 #
 report_info() {
-    local target=$1
+    local target="$1"
 
     local serial=$(od -An -v -ta -j262407 -N9 "${target}" | sed 's/ //g')
     local mac1=$(od -An -v -t x1 -j262184 -N6 "${target}" | sed 's/ //g')
@@ -95,7 +99,7 @@ usage() {
 cat << EOF
 
 Usage:
- $(basename $0) [options] <target>
+ $(basename "$0") [options] <target>
 
 Options:
  -d, --devid <serialnum>  set device id: -d aj3cmxeu1 (use "" generate a new serial number)
@@ -181,7 +185,7 @@ fi
 if [ -n "${MAC}" ]; then
     update_mac "${MAC}" "${TARGET}"
 elif [ -n "${SERIAL_NUM}" ]; then
-    update_devid "${MAC}" "${SERIAL_NUM}"
+    update_devid "${SERIAL_NUM}" "${TARGET}"
 else
     echo
     echo "***"
