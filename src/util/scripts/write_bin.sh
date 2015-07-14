@@ -59,6 +59,13 @@ update_devid() {
     local serial="$1"
     local target="$2"
 
+    echo "${serial}" | grep -iq '[0abcdefghjkmnpqrstuvwxyz12346789]\{9\}'
+    if [ $? -ne 0 ]; then
+        echo
+        echo "error: The device id \"${serial}\" is invalid. A valid device id must be 9 chars: mac=abc123xyz"
+        echo
+        exit 3
+    fi
     local new_target="$(echo "${target}" | sed "s/_[[:alnum:]]\{9\}.bin/_${serial}.bin/")"
 
     echo
