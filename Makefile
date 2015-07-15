@@ -18,10 +18,12 @@
 
 OWRT_SRC_URL := https://github.com/rest-switch/openwrt/archive/master.tar.gz
 OWRT_ROOT    := openwrt-master
+OWRT_CFG     := $(OWRT_ROOT)/.config
 OWRT_FEEDS   := $(OWRT_ROOT)/feeds
 OWRT_VER     := $(OWRT_ROOT)/version
 OWRT_TGT     := $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 PWFILE       := $(OWRT_ROOT)/package/base-files/files/etc/shadow
+GEN_CFG      := src/util/scripts/gen_config.sh
 UBOOT        := firmware/hlk-rm04_uboot-50000.bin
 OUTBIN       := bin
 SERNUM       := $(OUTBIN)/serialnum
@@ -34,9 +36,9 @@ MAC    :=  $(strip $(mac))
 ROOTPW := "$(strip $(rootpw))"
 
 
-all: $(TARGET)
+all: target
 
-$(TARGET): feeds patch
+target: feeds patch config
    ifneq ($(ROOTPW),"")
      ifneq (0,$(shell pwhash=$$(openssl passwd -1 "$(ROOTPW)") && awk 'BEGIN {OFS=FS=":"} $$1=="root" {$$2="'"$${pwhash}"'"} {print}' $(PWFILE) > $(PWFILE).tmp && mv $(PWFILE).tmp $(PWFILE); echo $$?))
 	$(error error: Failed to set the password for the root user.)
@@ -92,16 +94,24 @@ $(OWRT_ROOT):
 	@echo fetching openwrt...
 	curl -L $(OWRT_SRC_URL) | tar xz
 
-patch: | $(OWRT_ROOT) $(OWRT_VER)
-	@echo
-	@echo applying a140808 updates to openwrt...
-	cp -R files/. $(OWRT_ROOT)
-
 feeds: | $(OWRT_ROOT) $(OWRT_FEEDS)
+$(OWRT_FEEDS):
 	@echo
 	@echo applying feeds to openwrt...
 	$(OWRT_ROOT)/scripts/feeds update -a
 	$(OWRT_ROOT)/scripts/feeds install -a
+
+patch: | $(OWRT_ROOT) $(OWRT_VER)
+$(OWRT_VER):
+	@echo
+	@echo applying a140808 updates to openwrt...
+	cp -R files/. $(OWRT_ROOT)
+
+config: | $(OWRT_ROOT) $(OWRT_CFG)
+$(OWRT_CFG):
+	@echo
+	@echo generating openwrt .config file...
+	$(GEN_CFG)
 
 clean:
 	make -C $(OWRT_ROOT) clean
@@ -114,4 +124,4 @@ distclean:
 	make -C src/util/mac2bin clean
 	rm -rf $(OUTBIN) $(OWRT_ROOT)
 
-.PHONY: all image patch feeds clean distclean
+.PHONY: all target image feeds patch config clean distclean
