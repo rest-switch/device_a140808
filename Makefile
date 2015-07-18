@@ -36,9 +36,8 @@ MAC    :=  $(strip $(mac))
 ROOTPW := "$(strip $(rootpw))"
 
 
-all: target
-
-target: feeds patch config
+.DEFAULT all: target
+target: config
    ifneq ($(ROOTPW),"")
      ifneq (0,$(shell pwhash=$$(openssl passwd -1 "$(ROOTPW)") && awk 'BEGIN {OFS=FS=":"} $$1=="root" {$$2="'"$${pwhash}"'"} {print}' $(PWFILE) > $(PWFILE).tmp && mv $(PWFILE).tmp $(PWFILE); echo $$?))
 	$(error error: Failed to set the password for the root user.)
@@ -47,7 +46,7 @@ target: feeds patch config
      endif
    endif
 
-	make -C $(OWRT_ROOT)
+	$(MAKE) -C $(OWRT_ROOT)
 	@test -d $(OUTBIN) || mkdir $(OUTBIN)
 	@cp $(OWRT_TGT) $(OUTBIN)
 
@@ -82,11 +81,11 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 	cat $(TARGET) >> $(OUTBIN)/$(IMGFILE)
 
 $(SERNUM):
-	make -C src/util/serialnum
+	$(MAKE) -C src/util/serialnum
 	mv src/util/serialnum/serialnum $(OUTBIN)
 
 $(MAC2BIN):
-	make -C src/util/mac2bin
+	$(MAKE) -C src/util/mac2bin
 	mv src/util/mac2bin/mac2bin $(OUTBIN)
 
 $(OWRT_ROOT):
@@ -100,6 +99,7 @@ $(OWRT_FEEDS):
 	@echo applying feeds to openwrt...
 	$(OWRT_ROOT)/scripts/feeds update -a
 	$(OWRT_ROOT)/scripts/feeds install -a
+	rm $(OWRT_CFG) # remove .config file feeds gens
 
 patch: | $(OWRT_ROOT) $(OWRT_VER)
 $(OWRT_VER):
@@ -107,21 +107,22 @@ $(OWRT_VER):
 	@echo applying a140808 updates to openwrt...
 	cp -R files/. $(OWRT_ROOT)
 
-config: | $(OWRT_ROOT) $(OWRT_CFG)
+config: | feeds patch $(OWRT_CFG)
 $(OWRT_CFG):
 	@echo
 	@echo generating openwrt .config file...
 	$(GEN_CFG)
 
 clean:
-	make -C $(OWRT_ROOT) clean
-	make -C src/util/serialnum clean
-	make -C src/util/mac2bin clean
+	$(MAKE) -C $(OWRT_ROOT) clean
+	$(MAKE) -C src/util/serialnum clean
+	$(MAKE) -C src/util/mac2bin clean
 	rm -rf $(OUTBIN) $(OWRT_CFG)
 
 distclean:
-	make -C src/util/serialnum clean
-	make -C src/util/mac2bin clean
+	$(MAKE) -C src/util/serialnum clean
+	$(MAKE) -C src/util/mac2bin clean
 	rm -rf $(OUTBIN) $(OWRT_ROOT)
 
 .PHONY: all target image feeds patch config clean distclean
+
