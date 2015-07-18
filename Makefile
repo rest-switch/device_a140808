@@ -92,7 +92,7 @@ $(MAC2BIN):
 $(OWRT_ROOT):
 	@echo
 	@echo fetching openwrt...
-	curl -L $(OWRT_SRC_URL) | tar xz
+	wget -O- $(OWRT_SRC_URL) | tar xz
 
 feeds: | $(OWRT_ROOT) $(OWRT_FEEDS)
 $(OWRT_FEEDS):
