@@ -22,8 +22,8 @@ OWRT_CFG     := $(OWRT_ROOT)/.config
 OWRT_FEEDS   := $(OWRT_ROOT)/feeds
 OWRT_VER     := $(OWRT_ROOT)/version
 OWRT_TGT     := $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
-SSH_TOOL     := src/util/scripts/ssh_access.sh
-GEN_CFG      := src/util/scripts/gen_config.sh
+SSH_TOOL     := tools/scripts/ssh_access.sh
+GEN_CFG      := tools/scripts/gen_config.sh
 UBOOT        := firmware/hlk-rm04_uboot-50000.bin
 OUTBIN       := bin
 SERNUM       := $(OUTBIN)/serialnum
@@ -79,12 +79,12 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 	dd if=/dev/zero bs=1 count=$$((0x400000 - $$(stat -c '%s' "$(OUTBIN)/$(IMGFILE)"))) >> "$(OUTBIN)/$(IMGFILE)"
 
 $(SERNUM):
-	$(MAKE) -C "src/util/serialnum"
-	mv "src/util/serialnum/serialnum" "$(OUTBIN)"
+	$(MAKE) -C "tools/serialnum"
+	cp "tools/serialnum/serialnum" "$(OUTBIN)"
 
 $(MAC2BIN):
-	$(MAKE) -C "src/util/mac2bin"
-	mv "src/util/mac2bin/mac2bin" "$(OUTBIN)"
+	$(MAKE) -C "tools/mac2bin"
+	cp "tools/mac2bin/mac2bin" "$(OUTBIN)"
 
 $(OWRT_ROOT):
 	@echo
@@ -113,13 +113,13 @@ $(OWRT_CFG):
 
 clean:
 	$(MAKE) -C "$(OWRT_ROOT)" clean
-	$(MAKE) -C "src/util/serialnum" clean
-	$(MAKE) -C "src/util/mac2bin" clean
+	$(MAKE) -C "tools/serialnum" clean
+	$(MAKE) -C "tools/mac2bin" clean
 	rm -rf "$(OUTBIN)" "$(OWRT_CFG)"
 
 distclean:
-	$(MAKE) -C "src/util/serialnum" clean
-	$(MAKE) -C "src/util/mac2bin" clean
+	$(MAKE) -C "tools/serialnum" clean
+	$(MAKE) -C "tools/mac2bin" clean
 	rm -rf "$(OUTBIN)" "$(OWRT_ROOT)"
 
 ifeq ("none","$(strip $(ssh))")

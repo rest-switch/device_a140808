@@ -20,7 +20,7 @@
 
 MYFILE=$(readlink -f "$0")
 MYDIR=$(dirname "${MYFILE}")
-OWRT_ROOT="${MYDIR}/../../../openwrt-master"
+OWRT_ROOT="${MYDIR}/../../openwrt-master"
 OWRT_CFG="${OWRT_ROOT}/.config"
 
 

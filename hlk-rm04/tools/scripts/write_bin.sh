@@ -20,8 +20,8 @@
 
 MYFILE=$(readlink -f "$0")
 MYDIR=$(dirname "${MYFILE}")
-MAC2BIN="${MYDIR}/../../../bin/mac2bin"
-GENSERIAL="${MYDIR}/../../../bin/serialnum"
+MAC2BIN="${MYDIR}/../../bin/mac2bin"
+GENSERIAL="${MYDIR}/../../bin/serialnum"
 
 
 #
