@@ -1,5 +1,7 @@
 *.o
 *.bin
 
+avr/tools
+
 bin
 openwrt-master
