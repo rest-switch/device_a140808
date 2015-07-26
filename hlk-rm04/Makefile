@@ -80,11 +80,11 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 
 $(SERNUM):
 	$(MAKE) -C "tools/serialnum"
-	cp "tools/serialnum/serialnum" "$(OUTBIN)"
+	mv "tools/serialnum/serialnum" "$(OUTBIN)"
 
 $(MAC2BIN):
 	$(MAKE) -C "tools/mac2bin"
-	cp "tools/mac2bin/mac2bin" "$(OUTBIN)"
+	mv "tools/mac2bin/mac2bin" "$(OUTBIN)"
 
 $(OWRT_ROOT):
 	@echo
