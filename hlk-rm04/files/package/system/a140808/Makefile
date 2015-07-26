@@ -53,8 +53,10 @@ define Package/a140808/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/a140808 $(1)/usr/bin/
 	$(INSTALL_DIR) $(1)/etc/ssl/certs
+    ifneq ($(wildcard ./files/*.pem),)
 	$(INSTALL_DATA) ./files/*.pem $(1)/etc/ssl/certs/
 	$(foreach pem_file,$(wildcard ./files/*.pem),ln -sf $(notdir $(pem_file)) $(1)/etc/ssl/certs/$(shell openssl x509 -hash -noout -in $(pem_file)).0;)
+    endif
 endef
 
 $(eval $(call BuildPackage,a140808))
