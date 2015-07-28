@@ -16,20 +16,22 @@
 # Author: John Clark (johnc@restswitch.com)
 #
 
-OWRT_SRC_URL := https://github.com/rest-switch/openwrt/archive/master.tar.gz
-OWRT_ROOT    := openwrt-master
-OWRT_CFG     := $(OWRT_ROOT)/.config
-OWRT_FEEDS   := $(OWRT_ROOT)/feeds
-OWRT_VER     := $(OWRT_ROOT)/version
-OWRT_TGT     := $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
-SSH_TOOL     := tools/scripts/ssh_access.sh
-GEN_CFG      := tools/scripts/gen_config.sh
-UBOOT        := firmware/hlk-rm04_uboot-50000.bin
-OUTBIN       := bin
-SERNUM       := $(OUTBIN)/serialnum
-MAC2BIN      := $(OUTBIN)/mac2bin
-TARGET       := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
-MAC          := $(strip $(mac))
+OWRT_ROOT        := openwrt-master
+OWRT_SRC_URL     := https://github.com/rest-switch/openwrt/archive/master.tar.gz
+OWRT_CFG         := $(OWRT_ROOT)/.config
+OWRT_FEEDS       := $(OWRT_ROOT)/feeds
+OWRT_VER         := $(OWRT_ROOT)/version
+OWRT_TGT         := $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+SSH_TOOL         := tools/scripts/ssh_access.sh
+UBOOT            := firmware/hlk-rm04_uboot-50000.bin
+GEN_CFG          := tools/scripts/gen_config.sh
+OUTBIN           := bin
+SERNUM           := $(OUTBIN)/serialnum
+MAC              := $(strip $(mac))
+MAC2BIN          := $(OUTBIN)/mac2bin
+TARGET           := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+MINIPRO_ROOT     := tools/minipro
+MINIPRO_SRC_URL  := https://github.com/vdudouyt/minipro/archive/master.tar.gz
 
 
 .DEFAULT all: target
@@ -44,7 +46,7 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 	@echo "********************************************************************************"
 	@echo " error: Image target requires a MAC address to be specified: mac=aabbccddeeff"
 	@echo "********************************************************************************"
-	exit 11
+	exit 10
     endif
 
     ifneq (0,$(shell echo "$(MAC)" | grep -iq '[0-9a-f]\{12\}'; echo $$?))
@@ -75,16 +77,26 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 	# serial number
 	@echo -n $(DEVID) | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=9 seek=262407 conv=notrunc
 	cat "$(TARGET)" >> "$(OUTBIN)/$(IMGFILE)"
-        # padding
+	# padding
 	dd if=/dev/zero bs=1 count=$$((0x400000 - $$(stat -c '%s' "$(OUTBIN)/$(IMGFILE)"))) >> "$(OUTBIN)/$(IMGFILE)"
 
-$(SERNUM):
-	$(MAKE) -C "tools/serialnum"
-	mv "tools/serialnum/serialnum" "$(OUTBIN)"
-
-$(MAC2BIN):
-	$(MAKE) -C "tools/mac2bin"
-	mv "tools/mac2bin/mac2bin" "$(OUTBIN)"
+program: | $(MINIPRO_ROOT)
+    ifeq ("","$(filter $(strip $(flash)), MX25L3206E W25Q32BV)")
+	@echo "********************************************************************************"
+	@echo " error: The flash device must be either MX25L3206E or W25Q32BV"
+	@echo "          i.e.  flash=MX25L3206E or flash=W25Q32BV
+	@echo "********************************************************************************"
+	exit 14
+    endif
+    ifeq ("", "$(shell find '$(strip $(image))' -type f -size 4M)")
+	@echo "********************************************************************************"
+	@echo " error: Image file \"$(strip $(image))\""
+	@echo "        not found or incorrect size."
+	@echo "********************************************************************************"
+	exit 16
+    endif
+	@echo writing image file "$(strip $(image))" to device "$(strip $(flash))"
+	"$(MINIPRO_ROOT)/minipro" -p "$(strip $(flash))" -w "$(strip $(image))"
 
 $(OWRT_ROOT):
 	@echo
@@ -110,6 +122,21 @@ $(OWRT_CFG):
 	@echo
 	@echo generating openwrt .config file...
 	"$(GEN_CFG)"
+
+$(SERNUM):
+	$(MAKE) -C "tools/serialnum"
+	mv "tools/serialnum/serialnum" "$(OUTBIN)"
+
+$(MAC2BIN):
+	$(MAKE) -C "tools/mac2bin"
+	mv "tools/mac2bin/mac2bin" "$(OUTBIN)"
+
+$(MINIPRO_ROOT):
+	@echo
+	@echo fetching MINIPRO_ROOT...
+	@$(shell rm -rf "$(MINIPRO_ROOT)" 2>/dev/null; mkdir -p "$(MINIPRO_ROOT)" 2>/dev/null)
+	@wget -O- $(MINIPRO_SRC_URL) | tar --strip-components=1 -xzvC "$(MINIPRO_ROOT)"
+	$(MAKE) -C "$(MINIPRO_ROOT)"
 
 clean:
 	$(MAKE) -C "$(OWRT_ROOT)" clean
@@ -166,7 +193,7 @@ ssh_safe: ssh_pw ssh_cert
 	echo "            sshcert=<filespec>" &&\
 	echo &&\
 	echo "********************************************************************************" &&\
-	exit 13 )
+	exit 18 )
 
-.PHONY: all target image feeds patch config clean distclean ssh_check ssh_none ssh_pw ssh_cert ssh_safe
+.PHONY: all target image program feeds patch config clean distclean ssh_check ssh_none ssh_pw ssh_cert ssh_safe
 
