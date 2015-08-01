@@ -22,10 +22,42 @@
 
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include <avr/io.h>
 
 #include "msg_processor.h"
 
 void avr_init(void);  // from avr_impl.cpp
+
+////////////////////////////////////////
+FUSES =
+{
+    (FUSE_BODEN & FUSE_BODLEVEL),  // low fuses: 0x3f
+    (FUSE_BOOTSZ0 & FUSE_BOOTSZ1 & FUSE_CKOPT & FUSE_SPIEN), // high fuses: 0xc9
+};
+
+// --------------------------------------------------------
+// LB_MODE_3   (1111:1100)
+// Further programming and verification of the Flash and 
+// EEPROM is disabled in Parallel and SPI/JTAG Serial 
+// Programming mode. The Fuse bits are locked in both 
+// Serial and Parallel Programming mode.
+//
+// BLB0_MODE_4 (1111:0111)
+// LPM executing from the Boot
+// Loader section is not allowed to read from the 
+// Application section. If interrupt vectors are 
+// placed in the Boot Loader section, interrupts are 
+// disabled while executing from the Application section.
+//
+// BLB1_MODE_4 (1101:1111)
+// LPM executing from the Application section is not allowed 
+// to read from the Boot Loader section. If interrupt vectors 
+// are placed in the Application section, interrupts are 
+// disabled while executing from the Boot Loader section.
+//
+// or LOCKBITS_DEFAULT  (1111:1111)
+// --------------------------------------------------------
+LOCKBITS = (LB_MODE_3 & BLB0_MODE_4 & BLB1_MODE_4); // lock: 0xd4
 
 
 ////////////////////////////////////////
