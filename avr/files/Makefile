@@ -21,28 +21,28 @@
 #######################################
 
 ####################
-# the avrisp2 requires the following rule to be accessed by non-root
+# the minipro and the avrisp2 requires the following rule to be accessed by non-root
 #
-#   cat > /etc/udev/rules.d/10-avrisp2.rules << EOF
+#   cat > /etc/udev/rules.d/40-usbdev.rules << EOF
 #   # autoelectric.cn minipro
-#   SUBSYSTEM=="usb", ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="e11c", GROUP="plugdev", MODE="0660"
+#   SUBSYSTEM=="usb", ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="e11c", MODE="0660", GROUP="plugdev"
 #
 #   # atmel avrisp-mkii
-#   SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2104", GROUP="plugdev", MODE="0660"
+#   SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2104", MODE="0660", GROUP="plugdev"
 #   EOF
 #   service udev restart
 #
 
 ## mcu settings
-MCU      := atmega32
-MCU_HZ   := 16000000UL
+MCU    = atmega32
+MCU_HZ = 16000000UL
 
 ## output targets
 TARGET_DIR     := bin
 TARGET_NAME    := a140808
 TARGET_ELF     := $(TARGET_DIR)/$(TARGET_NAME).elf
+TARGET_BIN     := $(TARGET_DIR)/$(TARGET_NAME).bin
 TARGET_HEX     := $(TARGET_DIR)/$(TARGET_NAME).hex
-TARGET_HEX2    := ../$(TARGET_NAME).hex
 TARGET_EEP     := $(TARGET_DIR)/$(TARGET_NAME).eep
 TARGET_LSS     := $(TARGET_DIR)/$(TARGET_NAME).lss
 TARGET_MAP     := $(TARGET_DIR)/$(TARGET_NAME).map
@@ -58,6 +58,11 @@ OBJ_CP         := $(AVR_TOOLS)/bin/avr-objcopy
 OBJ_DMP        := $(AVR_TOOLS)/bin/avr-objdump
 OBJ_SZ         := $(AVR_TOOLS)/bin/avr-size
 
+## fuses and lock bits from elf
+FUSE_LOW  = $$($(OBJ_CP) -j .fuse --change-section-lma .fuse=0 -O binary $(TARGET_ELF) /dev/stdout | od -An -v -t x1 -j0 -N1 | sed 's/ //g')
+FUSE_HIGH = $$($(OBJ_CP) -j .fuse --change-section-lma .fuse=0 -O binary $(TARGET_ELF) /dev/stdout | od -An -v -t x1 -j1 -N1 | sed 's/ //g')
+LOCK_BITS = $$($(OBJ_CP) -j .lock --change-section-lma .lock=0 -O binary $(TARGET_ELF) /dev/stdout | od -An -v -t x1 -j0 -N1 | sed 's/ //g')
+
 ## extra include dirs
 INCLUDES = -I../incl
 
@@ -67,7 +72,7 @@ COMMON = -mmcu=$(MCU)
 ## compile options common for all C compilation units
 CFLAGS  = $(COMMON)
 CFLAGS += -Wall -gdwarf-2 -DF_CPU=$(MCU_HZ) -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
-CFLAGS += -MD -MP -MT $(*F).o -MF .dep/$(@F).d
+CFLAGS += -MD -MP -MT $(*F).o -MF "$(TARGET_DIR)/$(@F).dep"
 
 ## assembly specific flags
 ASMFLAGS  = $(COMMON)
@@ -132,23 +137,25 @@ avr-erase: avr-test
 	@$(AVR_DUDE) -C $(AVR_DUDE_CFG) -p $(MCU) -c avrisp2 -P usb -e
 
 ## read/burn avr fuses
-# atmega32: lfuse: 0x3f, hfuse: 0xc9, lock: 0x14
 .PHONY: avr-fuse-read avr-fuse-burn
 avr-fuse-read: avr-test
 	@$(AVR_DUDE) -C $(AVR_DUDE_CFG) -p $(MCU) -c avrisp2 -P usb -U lfuse:r:-:h -U hfuse:r:-:h -U lock:r:-:h
 avr-fuse-burn: avr-test
-	@$(AVR_DUDE) -C $(AVR_DUDE_CFG) -p $(MCU) -c avrisp2 -P usb -U lfuse:w:0x3f:m -U hfuse:w:0xc9:m -U lock:w:0x14:m
+	@echo "writing fuse low:  0x$(FUSE_LOW)"
+	@echo "writing fuse high: 0x$(FUSE_HIGH)"
+	@echo "writing lock bits: 0x$(LOCK_BITS)"
+	@$(AVR_DUDE) -C $(AVR_DUDE_CFG) -p $(MCU) -c avrisp2 -P usb -U lfuse:w:$(FUSE_LOW):m -U hfuse:w:$(FUSE_HIGH):m -U lock:w:$(LOCK_BITS):m
 
 .PHONY: avr-test
 avr-test:
 	@$(AVR_DUDE) -C $(AVR_DUDE_CFG) -p $(MCU) -c avrisp2 -P usb || (echo "\n\t************************************************************\n\t*** AVRDUDE ERROR: $$? ***  Is the Atmel device plugged-in?\n\t************************************************************\n\n"; exit 1)
-
-## make .dep dir
--include $(shell mkdir .dep 2>/dev/null) $(wildcard .dep/*)
 
 $(AVR_TOOLS):
 	@echo
 	@echo fetching avr tools...
 	@test -d "$(AVR_TOOLS)" || mkdir -p "$(AVR_TOOLS)"
 	@wget -O- "$(AVR_TOOLS_URL)" | tar --strip-components=4 -C "$(AVR_TOOLS)" -xJv "arduino-1.6.5/hardware/tools/avr"
+
+## include dependencies
+include $(wildcard "$(TARGET_DIR)/*.dep")
 
