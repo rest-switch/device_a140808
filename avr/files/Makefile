@@ -46,6 +46,7 @@ TARGET_HEX     := $(TARGET_DIR)/$(TARGET_NAME).hex
 TARGET_EEP     := $(TARGET_DIR)/$(TARGET_NAME).eep
 TARGET_LSS     := $(TARGET_DIR)/$(TARGET_NAME).lss
 TARGET_MAP     := $(TARGET_DIR)/$(TARGET_NAME).map
+FUSES_CONF     := $(TARGET_DIR)/fuses.conf
 
 ## avr tools
 AVR_TOOLS      := ../tools/avr
@@ -84,7 +85,9 @@ LDFLAGS  = $(COMMON)
 LDFLAGS += -Wl,-Map=$(TARGET_MAP)
 
 ## intel hex file production flags
-HEX_FLASH_FLAGS = -R .eeprom -R .fuse -R .lock -R .signature
+HEX_FLASH_FLAGS = -j .text -j .data
+#
+BIN_FLASH_FLAGS = -j .text -j .data
 #
 HEX_EEPROM_FLAGS  = -j .eeprom
 HEX_EEPROM_FLAGS += --set-section-flags=.eeprom="alloc,load"
@@ -94,7 +97,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 OBJECTS = $(TARGET_DIR)/avr_main.o $(TARGET_DIR)/avr_impl.o $(TARGET_DIR)/serial.o
 
 ## build
-all: $(TARGET_DIR) $(TARGET_ELF) $(TARGET_HEX) $(TARGET_HEX2) $(TARGET_EEP) $(TARGET_LSS) size
+all: $(TARGET_DIR) $(TARGET_ELF) $(TARGET_BIN) $(TARGET_HEX) $(TARGET_EEP) $(TARGET_LSS) $(FUSES_CONF) size
 
 ## output dir
 $(TARGET_DIR):
@@ -102,25 +105,34 @@ $(TARGET_DIR):
 
 ## compile
 $(TARGET_DIR)/%.o: %.cpp | $(TARGET_DIR)
-	$(CPP) $(INCLUDES) $(CFLAGS) -o $@ -c $<
+	$(CPP) $(INCLUDES) $(CFLAGS) -o "$@" -c "$<"
 
 ## link
 $(TARGET_ELF): $(AVR_TOOLS) $(OBJECTS)
-	$(CPP) $(LDFLAGS) $(OBJECTS) $(LIBDIRS) $(LIBS) -o $(TARGET_ELF)
+	$(CPP) $(LDFLAGS) $(OBJECTS) $(LIBDIRS) $(LIBS) -o "$(TARGET_ELF)"
+
+%.bin: $(TARGET_ELF)
+	$(OBJ_CP) $(BIN_FLASH_FLAGS) -O binary "$<" "$@"
+	@tr '\000' '\377' < /dev/zero | dd bs=1 count=$$((0x8000 - $$(stat -c '%s' "$@"))) >> "$@"
 
 %.hex: $(TARGET_ELF)
-	$(OBJ_CP) $(HEX_FLASH_FLAGS) -O ihex $< $@
+	$(OBJ_CP) $(HEX_FLASH_FLAGS) -O ihex "$<" "$@"
 
 %.eep: $(TARGET_ELF)
-	$(OBJ_CP) $(HEX_EEPROM_FLAGS) -O ihex $< $@
+	$(OBJ_CP) $(HEX_EEPROM_FLAGS) -O ihex "$<" "$@"
 
 %.lss: $(TARGET_ELF)
-	$(OBJ_DMP) -h -S $< > $@
+	$(OBJ_DMP) -h -S "$<" > "$@"
+
+$(FUSES_CONF): $(TARGET_ELF)
+	@printf 'fuses_lo = 0x00%s\n' $(FUSE_LOW) > $(FUSES_CONF)
+	@printf 'fuses_hi = 0x00%s\n' $(FUSE_HIGH) >> $(FUSES_CONF)
+	@printf 'lock_byte = 0x00%s\n' $(LOCK_BITS) >> $(FUSES_CONF)
 
 .PHONY: size
 size: $(TARGET_ELF)
 	@echo
-	@$(OBJ_SZ) -C --mcu=$(MCU) $(TARGET_ELF)
+	@$(OBJ_SZ) -C --mcu=$(MCU) "$(TARGET_ELF)"
 
 ## clean intermediate files
 .PHONY: clean
