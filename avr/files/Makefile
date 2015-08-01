@@ -25,10 +25,10 @@
 #
 #   cat > /etc/udev/rules.d/10-avrisp2.rules << EOF
 #   # autoelectric.cn minipro
-#   SUBSYSTEM=="usb", ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="e11c", GROUP="plugdev", MODE="0666"
+#   SUBSYSTEM=="usb", ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="e11c", GROUP="plugdev", MODE="0660"
 #
 #   # atmel avrisp-mkii
-#   SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2104", GROUP="plugdev", MODE="0666"
+#   SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2104", GROUP="plugdev", MODE="0660"
 #   EOF
 #   service udev restart
 #
