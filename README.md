@@ -38,4 +38,8 @@ http://www.atmel.com/webdoc/AVRLibcReferenceManual/group__demo__project_1demo_pr
 Minipro TL866A Resources: 
 http://www.autoelectric.cn/TL866_main.html
 https://github.com/vdudouyt/minipro
+
+AVRISP mkii
+http://www.atmel.com/webdoc/avrispmkii
+http://www.amazon.com/Compatible-AVRISP-In-System-Programmer-interface/dp/B00C7VV6E4
 ```
