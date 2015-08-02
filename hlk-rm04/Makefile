@@ -31,7 +31,9 @@ MAC              := $(strip $(mac))
 MAC2BIN          := $(OUTBIN)/mac2bin
 TARGET           := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 MINIPRO_ROOT     := tools/minipro
-MINIPRO_SRC_URL  := https://github.com/vdudouyt/minipro/archive/master.tar.gz
+MINIPRO          := $(MINIPRO_ROOT)/minipro
+MINIPRO_SRC_URL  := https://github.com/inindev/minipro/archive/master.tar.gz
+#MINIPRO_SRC_URL  := https://github.com/vdudouyt/minipro/archive/master.tar.gz
 
 
 .DEFAULT all: target
@@ -78,9 +80,9 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 	@echo -n $(DEVID) | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=9 seek=262407 conv=notrunc
 	cat "$(TARGET)" >> "$(OUTBIN)/$(IMGFILE)"
 	# padding
-	dd if=/dev/zero bs=1 count=$$((0x400000 - $$(stat -c '%s' "$(OUTBIN)/$(IMGFILE)"))) >> "$(OUTBIN)/$(IMGFILE)"
+	@tr '\000' '\377' < /dev/zero | dd bs=1 count=$$((0x400000 - $$(stat -c '%s' "$(OUTBIN)/$(IMGFILE)"))) >> "$(OUTBIN)/$(IMGFILE)"
 
-program: | $(MINIPRO_ROOT)
+program: minipro
     ifeq ("","$(filter $(strip $(flash)), MX25L3206E W25Q32BV)")
 	@echo "********************************************************************************"
 	@echo " error: The flash device must be either MX25L3206E or W25Q32BV"
@@ -96,7 +98,7 @@ program: | $(MINIPRO_ROOT)
 	exit 16
     endif
 	@echo writing image file "$(strip $(image))" to device "$(strip $(flash))"
-	"$(MINIPRO_ROOT)/minipro" -p "$(strip $(flash))" -w "$(strip $(image))"
+	"$(MINIPRO)" -p "$(strip $(flash))" -w "$(strip $(image))"
 
 $(OWRT_ROOT):
 	@echo
@@ -131,11 +133,15 @@ $(MAC2BIN):
 	$(MAKE) -C "tools/mac2bin"
 	mv "tools/mac2bin/mac2bin" "$(OUTBIN)"
 
-$(MINIPRO_ROOT):
-	@echo
-	@echo fetching MINIPRO_ROOT...
-	@$(shell rm -rf "$(MINIPRO_ROOT)" 2>/dev/null; mkdir -p "$(MINIPRO_ROOT)" 2>/dev/null)
-	@wget -O- $(MINIPRO_SRC_URL) | tar --strip-components=1 -xzvC "$(MINIPRO_ROOT)"
+.PHONY: minipro
+minipro: | $(MINIPRO)
+$(MINIPRO):
+	@if [ ! -d "$(MINIPRO_ROOT)" ]; then \
+		echo; \
+		echo "fetching minipro source...";\
+		mkdir -p "$(MINIPRO_ROOT)"; \
+		wget -O- $(MINIPRO_SRC_URL) | tar --strip-components=1 -xzvC "$(MINIPRO_ROOT)"; \
+	fi
 	$(MAKE) -C "$(MINIPRO_ROOT)"
 
 clean:

@@ -37,8 +37,9 @@
 MCU    = atmega32
 MCU_HZ = 16000000UL
 
-## output targets
 SRC_DIR        := src
+
+## output targets
 TARGET_DIR     := bin
 TARGET_NAME    := a140808
 TARGET_ELF     := $(TARGET_DIR)/$(TARGET_NAME).elf
@@ -59,6 +60,12 @@ CPP            := $(AVR_TOOLS)/bin/avr-g++
 OBJ_CP         := $(AVR_TOOLS)/bin/avr-objcopy
 OBJ_DMP        := $(AVR_TOOLS)/bin/avr-objdump
 OBJ_SZ         := $(AVR_TOOLS)/bin/avr-size
+
+## minipro
+MINIPRO_ROOT     := tools/minipro
+MINIPRO          := $(MINIPRO_ROOT)/minipro
+MINIPRO_SRC_URL  := https://github.com/inindev/minipro/archive/master.tar.gz
+#MINIPRO_SRC_URL  := https://github.com/vdudouyt/minipro/archive/master.tar.gz
 
 ## fuses and lock bits from elf
 FUSE_LOW  = $$($(OBJ_CP) -j .fuse --change-section-lma .fuse=0 -O binary $(TARGET_ELF) /dev/stdout | od -An -v -t x1 -j0 -N1 | sed 's/ //g')
@@ -139,6 +146,17 @@ size: $(TARGET_ELF)
 .PHONY: clean
 clean:
 	-rm -rf "$(TARGET_DIR)"
+
+.PHONY: minipro
+minipro: | $(MINIPRO)
+$(MINIPRO):
+	@if [ ! -d "$(MINIPRO_ROOT)" ]; then \
+		echo; \
+		echo "fetching minipro source...";\
+		mkdir -p "$(MINIPRO_ROOT)"; \
+		wget -O- $(MINIPRO_SRC_URL) | tar --strip-components=1 -xzvC "$(MINIPRO_ROOT)"; \
+	fi
+	$(MAKE) -C "$(MINIPRO_ROOT)"
 
 ## flash avr with hex
 .PHONY: avr-install
