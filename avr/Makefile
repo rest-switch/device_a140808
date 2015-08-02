@@ -154,12 +154,12 @@ clean:
 ## flash avr with bin
 .PHONY: mp-install
 mp-install: $(TARGET_BIN) mp-test
-	$(MINIPRO) -I -p "$(MCU)" -c code -w "$(TARGET_BIN)"
+	"$(MINIPRO)" -I -p "$(MCU)" -c code -w "$(TARGET_BIN)"
 
 ## read/burn avr fuses
 .PHONY: mp-fuse-read mp-fuse-burn
 mp-fuse-read: mp-test
-	@$(MINIPRO) -I -p "$(MCU)" -c config -r "$(TARGET_DIR)/mp-fuses.txt"
+	@"$(MINIPRO)" -I -p "$(MCU)" -c config -r "$(TARGET_DIR)/mp-fuses.txt"
 	@echo
 	@cat "$(TARGET_DIR)/mp-fuses.txt"
 	@rm "$(TARGET_DIR)/mp-fuses.txt"
@@ -169,11 +169,11 @@ mp-fuse-burn: $(FUSES_CONF) mp-test
 	@echo "writing fuse settings:"
 	@cat "$(FUSES_CONF)"
 	@echo
-	@$(MINIPRO) -I -p "$(MCU)" -c config -w "$(FUSES_CONF)"
+	@"$(MINIPRO)" -I -p "$(MCU)" -c config -w "$(FUSES_CONF)"
 
 .PHONY: mp-test
 mp-test: minipro
-	@$(MINIPRO) -I -p "$(MCU)" -c config -r /dev/null > /dev/null || (echo "\n\t************************************************************\n\t*** MINIPRO ERROR: $$? ***  Is the Atmel device plugged-in?\n\t************************************************************\n\n"; exit 1)
+	@"$(MINIPRO)" -I -p "$(MCU)" -c config -r /dev/null > /dev/null || (echo "\n\t************************************************************\n\t*** MINIPRO ERROR: $$? ***  Is the Atmel device plugged-in?\n\t************************************************************\n\n"; exit 1)
 
 .PHONY: minipro
 minipro: | $(MINIPRO)
