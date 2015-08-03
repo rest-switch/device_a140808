@@ -40,7 +40,7 @@ MINIPRO_SRC_URL  := https://github.com/inindev/minipro/archive/master.tar.gz
 
 target: config ssh_check
 	$(MAKE) -C "$(OWRT_ROOT)"
-	@test -d "$(OUTBIN)" || mkdir "$(OUTBIN)"
+	@if [ ! -d "$(OUTBIN)" ]; then mkdir "$(OUTBIN)"; fi
 	@cp "$(OWRT_TGT)" "$(OUTBIN)"
 
 image: | $(TARGET) $(SERNUM) $(MAC2BIN)
@@ -83,20 +83,34 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 	@tr '\000' '\377' < /dev/zero | dd bs=1 count=$$((0x400000 - $$(stat -c '%s' "$(OUTBIN)/$(IMGFILE)"))) >> "$(OUTBIN)/$(IMGFILE)"
 
 program: minipro
-    ifeq ("","$(filter $(strip $(flash)), MX25L3206E W25Q32BV)")
+   ifneq ("","$(strip $(sshcert))")
 	@echo "********************************************************************************"
-	@echo " error: The flash device must be either MX25L3206E or W25Q32BV"
-	@echo "          i.e.  flash=MX25L3206E or flash=W25Q32BV
+	@echo " error: Flash device not specified: flash=W25Q32BV"
 	@echo "********************************************************************************"
 	exit 14
-    endif
-    ifeq ("", "$(shell find '$(strip $(image))' -type f -size 4M)")
+   endif
+     ifeq ("","$(filter $(strip $(flash)), MX25L3206E W25Q32BV)")
+	@echo "********************************************************************************"
+	@echo " error: The flash device must be either MX25L3206E or W25Q32BV"
+	@echo "          i.e.  flash=MX25L3206E or flash=W25Q32BV"
+	@echo "********************************************************************************"
+	exit 14
+     endif
+
+   ifeq ("","$(strip $(image))")
+	@echo "********************************************************************************"
+	@echo " error: Image file not specified: image=<a140808.bin>"
+	@echo "********************************************************************************"
+	exit 16
+   else
+     ifeq ("", "$(shell find '$(strip $(image))' -type f -size 4M)")
 	@echo "********************************************************************************"
 	@echo " error: Image file \"$(strip $(image))\""
 	@echo "        not found or incorrect size."
 	@echo "********************************************************************************"
 	exit 16
-    endif
+     endif
+   endif
 	@echo writing image file "$(strip $(image))" to device "$(strip $(flash))"
 	"$(MINIPRO)" -p "$(strip $(flash))" -w "$(strip $(image))"
 
@@ -111,7 +125,7 @@ $(OWRT_FEEDS):
 	@echo applying feeds to openwrt...
 	"$(OWRT_ROOT)/scripts/feeds" update -a
 	"$(OWRT_ROOT)/scripts/feeds" install -a
-	rm "$(OWRT_CFG)" # remove .config file that the feeds gen
+	@rm -f "$(OWRT_CFG)" # remove .config file that the feeds gen
 
 patch: | $(OWRT_ROOT) $(OWRT_VER)
 $(OWRT_VER):
@@ -144,16 +158,11 @@ $(MINIPRO):
 	fi
 	$(MAKE) -C "$(MINIPRO_ROOT)"
 
-clean:
-	$(MAKE) -C "$(OWRT_ROOT)" clean
+clean distclean:
 	$(MAKE) -C "tools/serialnum" clean
 	$(MAKE) -C "tools/mac2bin" clean
-	rm -rf "$(OUTBIN)" "$(OWRT_CFG)"
-
-distclean:
-	$(MAKE) -C "tools/serialnum" clean
-	$(MAKE) -C "tools/mac2bin" clean
-	rm -rf "$(OUTBIN)" "$(OWRT_ROOT)"
+	@if [ -d "$(OWRT_ROOT)" ]; then $(MAKE) -C "$(OWRT_ROOT)" $@; fi
+	rm -rf "$(OUTBIN)"
 
 ifeq ("none","$(strip $(ssh))")
    ssh_check: ssh_none
