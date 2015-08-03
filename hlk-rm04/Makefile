@@ -210,5 +210,5 @@ ssh_safe: ssh_pw ssh_cert
 	echo "********************************************************************************" &&\
 	exit 18 )
 
-.PHONY: all target image program feeds patch config clean distclean ssh_check ssh_none ssh_pw ssh_cert ssh_safe
+.PHONY: all target image program feeds patch config minipro clean distclean ssh_none ssh_cert ssh_pw ssh_safe
 
