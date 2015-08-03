@@ -57,8 +57,8 @@ FUSES =
 //
 // or LOCKBITS_DEFAULT  (1111:1111)
 // --------------------------------------------------------
-//LOCKBITS = (0x3f & (LB_MODE_3 & BLB0_MODE_4 & BLB1_MODE_4)); // lock: 0xd4
-LOCKBITS = (0x3f & LOCKBITS_DEFAULT); // lock: 0x3f
+//LOCKBITS = (LB_MODE_3 & BLB0_MODE_4 & BLB1_MODE_4); // lock: 0xd4
+LOCKBITS = LOCKBITS_DEFAULT; // lock: 0xff
 
 
 ////////////////////////////////////////

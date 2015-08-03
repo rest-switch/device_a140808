@@ -71,6 +71,8 @@ MINIPRO_SRC_URL  := https://github.com/inindev/minipro/archive/master.tar.gz
 FUSE_LOW  = $$($(OBJ_CP) -j .fuse --change-section-lma .fuse=0 -O binary $(TARGET_ELF) /dev/stdout | od -An -v -t x1 -j0 -N1 | sed 's/ //g')
 FUSE_HIGH = $$($(OBJ_CP) -j .fuse --change-section-lma .fuse=0 -O binary $(TARGET_ELF) /dev/stdout | od -An -v -t x1 -j1 -N1 | sed 's/ //g')
 LOCK_BITS = $$($(OBJ_CP) -j .lock --change-section-lma .lock=0 -O binary $(TARGET_ELF) /dev/stdout | od -An -v -t x1 -j0 -N1 | sed 's/ //g')
+# avrdude doesnt like bits 6 & 7 set, mask them off
+AVRDUDE_LOCK_BITS = $$(printf '%x\n' $$((0x3f & 0x$(LOCK_BITS))))
 
 ## extra include dirs
 INCLUDES =
@@ -209,12 +211,12 @@ avr-flash-erase: avr-test
 ## read/burn avr fuses
 .PHONY: avr-fuse-read avr-fuse-burn
 avr-fuse-read: avr-test
-	@"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -U lfuse:r:-:h -U hfuse:r:-:h -U lock:r:-:h
+	@"$(AVR_DUDE)" -u -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -U lfuse:r:-:h -U hfuse:r:-:h -U lock:r:-:h
 avr-fuse-write: $(TARGET_ELF) avr-test
 	@echo "writing fuse low:  0x$(FUSE_LOW)"
 	@echo "writing fuse high: 0x$(FUSE_HIGH)"
-	@echo "writing lock bits: 0x$(LOCK_BITS)"
-	@"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -U lfuse:w:0x$(FUSE_LOW):m -U hfuse:w:0x$(FUSE_HIGH):m -U lock:w:0x$(LOCK_BITS):m
+	@echo "writing lock bits: 0x$(AVRDUDE_LOCK_BITS)"
+	@"$(AVR_DUDE)" -u -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -U lfuse:w:0x$(FUSE_LOW):m -U hfuse:w:0x$(FUSE_HIGH):m -U lock:w:0x$(AVRDUDE_LOCK_BITS):m
 
 .PHONY: avr-test
 avr-test: avr-tools
