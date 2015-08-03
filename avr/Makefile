@@ -152,8 +152,11 @@ clean:
 #####################
 
 ## flash avr with bin
-.PHONY: mp-install
-mp-install: $(TARGET_BIN) mp-test
+.PHONY: mp-program
+mp-program: | mp-flash-write mp-fuse-write
+
+.PHONY: mp-flash-write
+mp-flash-write: $(TARGET_BIN) mp-test
 	"$(MINIPRO)" -I -p "$(MCU)" -c code -w "$(TARGET_BIN)"
 
 ## read/burn avr fuses
@@ -164,7 +167,7 @@ mp-fuse-read: mp-test
 	@cat "$(TARGET_DIR)/mp-fuses.txt"
 	@rm "$(TARGET_DIR)/mp-fuses.txt"
 	@echo
-mp-fuse-burn: $(FUSES_CONF) mp-test
+mp-fuse-write: $(FUSES_CONF) mp-test
 	@echo
 	@echo "writing fuse settings:"
 	@cat "$(FUSES_CONF)"
@@ -192,27 +195,30 @@ $(MINIPRO):
 #########################
 
 ## flash avr with hex
-.PHONY: avr-install
-avr-install: $(TARGET_HEX) avr-test
-	"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -U "flash:w:$(TARGET_HEX):i"
+.PHONY: avr-program
+avr-program: | avr-flash-write avr-fuse-write
 
-.PHONY: avr-erase
-avr-erase: avr-test
+.PHONY: avr-flash-write
+avr-flash-write: $(TARGET_HEX) avr-test
+	"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -U flash:w:"$(TARGET_HEX)":i
+
+.PHONY: avr-flash-erase
+avr-flash-erase: avr-test
 	@"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -e
 
 ## read/burn avr fuses
 .PHONY: avr-fuse-read avr-fuse-burn
 avr-fuse-read: avr-test
 	@"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -U lfuse:r:-:h -U hfuse:r:-:h -U lock:r:-:h
-avr-fuse-burn: avr-test
+avr-fuse-write: $(TARGET_ELF) avr-test
 	@echo "writing fuse low:  0x$(FUSE_LOW)"
 	@echo "writing fuse high: 0x$(FUSE_HIGH)"
 	@echo "writing lock bits: 0x$(LOCK_BITS)"
-	@"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -U lfuse:w:$(FUSE_LOW):m -U hfuse:w:$(FUSE_HIGH):m -U lock:w:$(LOCK_BITS):m
+	@"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb -U lfuse:w:0x$(FUSE_LOW):m -U hfuse:w:0x$(FUSE_HIGH):m -U lock:w:0x$(LOCK_BITS):m
 
 .PHONY: avr-test
 avr-test: avr-tools
-	@"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb || (echo "\n\t************************************************************\n\t*** AVRDUDE ERROR: $$? ***  Is the Atmel device plugged-in?\n\t************************************************************\n\n"; exit 1)
+	@"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb 2> /dev/null || (echo "\n\t************************************************************\n\t*** AVRDUDE ERROR: $$? ***  Is the Atmel device plugged-in?\n\t************************************************************\n\n"; exit 1)
 
 .PHONY: avrtools
 avr-tools: | $(AVR_TOOLS)
