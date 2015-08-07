@@ -164,7 +164,7 @@ mp-flash-write: $(TARGET_BIN) mp-test
 ## read/burn avr fuses
 .PHONY: mp-fuse-read mp-fuse-burn
 mp-fuse-read: mp-test
-	@"$(MINIPRO)" -I -p "$(MCU)" -c config -r "$(TARGET_DIR)/mp-fuses.txt"
+	"$(MINIPRO)" -I -p "$(MCU)" -c config -r "$(TARGET_DIR)/mp-fuses.txt"
 	@echo
 	@cat "$(TARGET_DIR)/mp-fuses.txt"
 	@rm "$(TARGET_DIR)/mp-fuses.txt"
@@ -174,7 +174,7 @@ mp-fuse-write: $(FUSES_CONF) mp-test
 	@echo "writing fuse settings:"
 	@cat "$(FUSES_CONF)"
 	@echo
-	@"$(MINIPRO)" -I -p "$(MCU)" -c config -w "$(FUSES_CONF)"
+	"$(MINIPRO)" -I -e -p "$(MCU)" -c config -w "$(FUSES_CONF)"
 
 .PHONY: mp-test
 mp-test: minipro
