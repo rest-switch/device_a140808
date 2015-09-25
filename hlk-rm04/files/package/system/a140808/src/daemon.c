@@ -82,10 +82,10 @@ int get_serial(char* p_buf, const size_t p_len)
 }
 
 
-////////////////////////////////////////
-int get_cloudcfg(char* p_buf, const size_t p_len)
+int get_cloudcfg(char* p_buf, const size_t p_len, int* p_port)
 {
     // sanity
+    *p_port = 0;
     if(p_len < 16)
     {
         printf("insufficient buffer\n");
@@ -125,7 +125,14 @@ int get_cloudcfg(char* p_buf, const size_t p_len)
 
     for(size_t i=0, imax=(rlen-1); i<imax; ++i)
     {
-        p_buf[i] = line[i];
+        const char c = line[i];
+        if(':' == c)
+        {
+            p_buf[i] = '\0';
+            *p_port = atoi(line + i + 1);
+            break;
+        }
+        p_buf[i] = c;
     }
     p_buf[rlen-1] = '\0';
 
@@ -133,7 +140,6 @@ int get_cloudcfg(char* p_buf, const size_t p_len)
 
     return(0);
 }
-
 
 
 ////////////////////////////////////////
@@ -269,16 +275,18 @@ int main(int argc, const char** argv)
         sleep_ms(2000);
     }
 
+    int port = 0;
     char webhost[64] = { 0 };
-    const int rc = get_cloudcfg(webhost, sizeof(webhost));
+    const int rc = get_cloudcfg(webhost, sizeof(webhost), &port);
     if(0 != rc)
     {
         log_debug("failed to read /etc/config/cloudcfg, using default WEB_HOST value");
         strcpy(webhost, WEB_HOST);
     }
+    if(0 == port) port = 443;
 
     log_notice("connecting to host: [%s]", webhost);
-    ws_connect(webhost, url, 443, 1);
+    ws_connect(webhost, url, port, 1);
 
     // worker loop
     while(s_run)
