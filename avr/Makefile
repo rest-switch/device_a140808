@@ -52,7 +52,7 @@ FUSES_CONF     := $(TARGET_DIR)/fuses.conf
 
 ## avr tools
 AVR_TOOLS      := tools/avr
-AVR_TOOLS_URL  := http://downloads.arduino.cc/arduino-1.6.5-linux64.tar.xz
+AVR_TOOLS_URL  := http://downloads.arduino.cc/arduino-1.6.5-r5-linux64.tar.xz
 AVR_DUDE       := $(AVR_TOOLS)/bin/avrdude
 AVR_DUDE_CFG   := $(AVR_TOOLS)/etc/avrdude.conf
 CC             := $(AVR_TOOLS)/bin/avr-gcc
