@@ -253,9 +253,9 @@ fi
 while [ $# -gt 0 ]; do
     case "$1" in
     -a|--access)
-        has_cert && return 0
-        has_pass && return 0
-        return 1  # no access
+        has_cert && exit 0
+        has_pass && exit 0
+        exit 1  # no access
         ;;
     -c|--cert)
         test $# -lt 2 && usage && exit 1
