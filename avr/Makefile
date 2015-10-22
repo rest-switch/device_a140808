@@ -145,8 +145,8 @@ size: $(TARGET_ELF)
 	@$(OBJ_SZ) -C --mcu=$(MCU) "$(TARGET_ELF)"
 
 ## clean intermediate files
-.PHONY: clean
-clean:
+.PHONY: clean distclean
+clean distclean:
 	-rm -rf "$(TARGET_DIR)"
 
 #####################

@@ -18,8 +18,8 @@
 
 SUBDIRS := avr hlk-rm04
 
-.PHONY: all clean
-all clean:
+.PHONY: all clean distclean
+all clean distclean:
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir -f Makefile $@; \
 	done
