@@ -222,7 +222,7 @@ avr-fuse-write: $(TARGET_ELF) avr-test
 avr-test: avr-tools
 	@"$(AVR_DUDE)" -C "$(AVR_DUDE_CFG)" -p "$(MCU)" -c avrisp2 -P usb 2> /dev/null || (echo "\n\t************************************************************\n\t*** AVRDUDE ERROR: $$? ***  Is the Atmel device plugged-in?\n\t************************************************************\n\n"; exit 1)
 
-.PHONY: avrtools
+.PHONY: avr-tools
 avr-tools: | $(AVR_TOOLS)
 $(AVR_TOOLS):
 	@echo
