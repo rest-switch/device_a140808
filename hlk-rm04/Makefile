@@ -21,6 +21,8 @@ OWRT_SRC_URL     := https://github.com/rest-switch/openwrt/archive/master.tar.gz
 OWRT_CFG         := $(OWRT_ROOT)/.config
 OWRT_FEEDS       := $(OWRT_ROOT)/feeds
 OWRT_VER         := $(OWRT_ROOT)/version
+OWRT_CACERT_SRC  := ca*certs/*_ca_public.cer
+OWRT_CACERT_TGT  := $(OWRT_ROOT)/package/system/a140808/files
 OWRT_TGT         := $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 SSH_TOOL         := tools/scripts/ssh_access.sh
 UBOOT            := firmware/hlk-rm04_uboot-50000.bin
@@ -38,7 +40,7 @@ MINIPRO_SRC_URL  := https://github.com/inindev/minipro/archive/master.tar.gz
 
 .DEFAULT all: target
 
-target: config ssh_check
+target: config cacerts ssh_check
 	$(MAKE) -C "$(OWRT_ROOT)"
 	@if [ ! -d "$(OUTBIN)" ]; then mkdir "$(OUTBIN)"; fi
 	@cp "$(OWRT_TGT)" "$(OUTBIN)"
@@ -132,6 +134,15 @@ $(OWRT_VER):
 	@echo
 	@echo applying a140808 updates to openwrt...
 	cp -R "files/." "$(OWRT_ROOT)"
+
+cacerts: | patch
+    ifneq ($(wildcard $(OWRT_CACERT_SRC)),)
+	@echo copying CA certificate files...
+	@mkdir -p "$(OWRT_CACERT_TGT)"
+	@$(foreach ca_file,$(wildcard $(OWRT_CACERT_SRC)),cp $(ca_file) "$(OWRT_CACERT_TGT)/$(basename $(notdir $(ca_file))).pem";)
+    else
+	@echo no CA certificate files present
+    endif
 
 config: | feeds patch $(OWRT_CFG)
 $(OWRT_CFG):
