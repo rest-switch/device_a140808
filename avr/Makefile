@@ -228,7 +228,7 @@ $(AVR_TOOLS):
 	@echo
 	@echo fetching avr tools...
 	@test -d "$(AVR_TOOLS)" || mkdir -p "$(AVR_TOOLS)"
-	@wget -O- "$(AVR_TOOLS_URL)" | tar --strip-components=4 -C "$(AVR_TOOLS)" -xJv "arduino-1.6.5/hardware/tools/avr"
+	@wget -O- "$(AVR_TOOLS_URL)" | tar --strip-components=4 -C "$(AVR_TOOLS)" -xJv "arduino-1.6.5-r5/hardware/tools/avr"
 
 ## include dependencies
 include $(wildcard "$(TARGET_DIR)/*.dep")
