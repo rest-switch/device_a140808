@@ -36,8 +36,8 @@ http://www.atmel.com/Images/Atmel-8155-8-bit-Microcontroller-AVR-ATmega32A_Datas
 http://www.atmel.com/webdoc/AVRLibcReferenceManual/group__demo__project_1demo_project_compile.html
 
 Minipro TL866A Resources: 
-http://www.autoelectric.cn/TL866_main.html
-https://github.com/vdudouyt/minipro
+http://www.autoelectric.cn/EN/TL866_main.html
+https://github.com/inindev/minipro
 
 AVRISP mkii
 http://www.atmel.com/webdoc/avrispmkii
