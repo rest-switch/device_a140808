@@ -62,6 +62,7 @@ configure() {
     cfg_disable 'CONFIG_PACKAGE_iptables-snmp'
     cfg_disable 'CONFIG_PACKAGE_libwebsockets-examples'
     cfg_disable 'CONFIG_PACKAGE_ppp-multilink'
+    cfg_disable 'CONFIG_PACKAGE_pppossh'
     cfg_disable 'CONFIG_PACKAGE_uhttpd_debug'
     cfg_disable 'CONFIG_PACKAGE_uhttpd-mod-lua'
     cfg_disable 'CONFIG_PACKAGE_uhttpd-mod-tls'
