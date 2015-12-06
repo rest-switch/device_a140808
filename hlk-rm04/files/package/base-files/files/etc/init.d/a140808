@@ -25,14 +25,21 @@ STOP=40
 
 start() {
 	[ ! -f /var/run/a140808.pid ] && {
-		echo 'starting deamon...'
+		echo 'starting a140808 deamon...'
 		/usr/bin/a140808
 	}
 }
 
 stop() {
 	[ -f /var/run/a140808.pid ] && {
-		echo 'stopping deamon...'
+		echo 'stopping a140808 deamon...'
 		kill $(cat /var/run/a140808.pid)
 	}
 }
+
+restart() {
+	stop
+	sleep 1
+	start
+}
+
