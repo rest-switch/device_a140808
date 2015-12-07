@@ -133,7 +133,7 @@ int ws_connect(const char* p_host, const char* p_url_path, const int p_port, con
         return(-1);
     }
 
-    log_debug("ws_connect: connect request suceeded");
+    log_debug("ws_connect: connect request succeeded");
 
     return(0);
 }
