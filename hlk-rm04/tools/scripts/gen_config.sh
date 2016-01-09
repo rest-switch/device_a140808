@@ -68,6 +68,17 @@ configure() {
     cfg_disable 'CONFIG_PACKAGE_uhttpd-mod-tls'
     cfg_disable 'CONFIG_PACKAGE_uhttpd-mod-ubus'
 
+    # values
+    cfg_enable  'CONFIG_IMAGEOPT'
+    cfg_enable  'CONFIG_VERSIONOPT'
+    cfg_set_val 'CONFIG_VERSION_DIST' 'OpenWrt'
+    cfg_set_val 'CONFIG_VERSION_NICK' 'Barrier Breaker'
+    cfg_set_val 'CONFIG_VERSION_NUMBER' '14.07'
+    cfg_set_val 'CONFIG_VERSION_REPO' 'http:\/\/downloads.openwrt.org\/%n\/%v\/%S\/packages'
+    cfg_set_val 'CONFIG_VERSION_MANUFACTURER' ''
+    cfg_set_val 'CONFIG_VERSION_PRODUCT' ''
+    cfg_set_val 'CONFIG_VERSION_HWREV' ''
+
     make -C "${OWRT_ROOT}" oldconfig || error "$?" "make oldconfig failed"
 }
 
@@ -82,6 +93,12 @@ cfg_disable() {
     echo "disabling: $1"
     grep -q "$1" "${OWRT_CFG}" || echo "$1" >> "${OWRT_CFG}"
     sed -i "s/.*$1.*/# $1 is not set/g" "${OWRT_CFG}"
+}
+
+cfg_set_val() {
+    echo "setting value: $1 = \"$2\""
+    grep -q "$1" "${OWRT_CFG}" || echo "$1" >> "${OWRT_CFG}"
+    sed -i "s/.*$1.*/$1=\"$2\"/g" "${OWRT_CFG}"
 }
 
 cfg_inject() {
