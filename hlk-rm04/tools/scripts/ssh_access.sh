@@ -136,6 +136,8 @@ ssh_pass() {
             # prompt for password
             for i in 1 2 3
             do
+                printf "\n\n\n\n##################################"
+                printf "\nSet SSH password for root account:"
                 stty -echo
                 printf "\npassword: "
                 read secret1
