@@ -17,7 +17,7 @@
 //
 
 
-var port = 80;
+var port = 8080;
 var filepath = '../../openwrt-master/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin';
 
 
