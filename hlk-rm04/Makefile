@@ -16,49 +16,49 @@
 # Author: John Clark (johnc@restswitch.com)
 #
 
-OWRT_ROOT        := openwrt-master
-OWRT_SRC_URL     := https://github.com/rest-switch/openwrt/archive/master.tar.gz
-OWRT_CFG         := $(OWRT_ROOT)/.config
-OWRT_FEEDS       := $(OWRT_ROOT)/feeds
-OWRT_VER         := $(OWRT_ROOT)/version
-OWRT_CACERT_SRC  := ca*certs/*_ca_public.cer
-OWRT_CACERT_TGT  := $(OWRT_ROOT)/package/system/a140808/files
-OWRT_TGT         := $(OWRT_ROOT)/bin/ramips/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
-SSH_TOOL         := tools/scripts/ssh_access.sh
-UBOOT            := firmware/hlk-rm04_uboot-50000.bin
-GEN_CFG          := tools/scripts/gen_config.sh
 OUTBIN           := bin
-SERNUM           := $(OUTBIN)/serialnum
+CFG_DIFF         := patches/diffconfig
+PATCHES          := $(sort $(wildcard patches/*.patch))
+UBOOT            := firmware/hlk-rm04_uboot-50000.bin
 MAC              := $(strip $(mac))
 MAC2BIN          := $(OUTBIN)/mac2bin
+SERNUM           := $(OUTBIN)/serialnum
 TARGET           := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+OWRT_ROOT        := openwrt-master
+OWRT_SRC_URL     := https://github.com/openwrt/openwrt/archive/master.tar.gz
+OWRT_FEEDS       := $(OWRT_ROOT)/feeds
+OWRT_VER         := $(shell curl -s https://api.github.com/repos/openwrt/openwrt/commits\?per_page\=1 | sed -rn 's/\s*"message".*svn:\/\/svn.openwrt.org\/openwrt\/trunk@([0-9][0-9][0-9][0-9][0-9]).*/\1/p')
+OWRT_CFG         := $(OWRT_ROOT)/.config
+OWRT_CACERT_SRC  := ca*certs/*_ca_public.cer
+OWRT_CACERT_TGT  := $(OWRT_ROOT)/package/utils/a140808/files
+OWRT_TGT         := $(OWRT_ROOT)/bin/ramips/openwrt-$(shell cat "$(OWRT_ROOT)/version")-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+SSH_TOOL         := tools/scripts/ssh_access.sh
 MINIPRO_ROOT     := tools/minipro
 MINIPRO          := $(MINIPRO_ROOT)/minipro
 MINIPRO_SRC_URL  := https://github.com/inindev/minipro/archive/master.tar.gz
-#MINIPRO_SRC_URL  := https://github.com/vdudouyt/minipro/archive/master.tar.gz
 
 
 .DEFAULT all: target
 
-target: config cacerts ssh_check
+target: | config cacerts ssh_check
 	$(MAKE) -C "$(OWRT_ROOT)"
 	@if [ ! -d "$(OUTBIN)" ]; then mkdir "$(OUTBIN)"; fi
-	@cp "$(OWRT_TGT)" "$(OUTBIN)"
+	@cp "$(OWRT_TGT)" "$(TARGET)"
 
 image: | $(TARGET) $(SERNUM) $(MAC2BIN)
     ifeq ("","$(MAC)")
 	@echo "********************************************************************************"
 	@echo " error: Image target requires a MAC address to be specified: mac=aabbccddeeff"
 	@echo "********************************************************************************"
-	exit 10
+	@exit 10
     endif
 
-    ifneq (0,$(shell echo "$(MAC)" | grep -iq '[0-9a-f]\{12\}'; echo $$?))
+    ifneq (0,$(shell echo "$(MAC)" | grep -iq '^[0-9a-f]\{12\}$$'; echo $$?))
 	@echo "********************************************************************************"
 	@echo " error: The MAC address "$(MAC)" is invalid."
 	@echo "        A valid MAC address must be 12 hex chars: mac=aabbccddeeff"
 	@echo "********************************************************************************"
-	exit 12
+	@exit 12
     endif
 
 	$(eval MAC2 := $(shell printf "%x" $$((0x$(MAC) + 1))))
@@ -89,28 +89,28 @@ program: minipro
 	@echo "********************************************************************************"
 	@echo " error: Flash device not specified: flash=W25Q32BV"
 	@echo "********************************************************************************"
-	exit 14
+	@exit 14
    endif
-     ifeq ("","$(filter $(strip $(flash)), MX25L3206E W25Q32BV)")
+     ifeq ("","$(filter $(strip $(flash)), MX25L3206E PM25LQ032C W25Q32BV)")
 	@echo "********************************************************************************"
-	@echo " error: The flash device must be either MX25L3206E or W25Q32BV"
-	@echo "          i.e.  flash=MX25L3206E or flash=W25Q32BV"
+	@echo " error: The flash device must be either MX25L3206E, PM25LQ032C, or W25Q32BV"
+	@echo "            eg:  flash=MX25L3206E or flash=W25Q32BV"
 	@echo "********************************************************************************"
-	exit 14
+	@exit 14
      endif
 
    ifeq ("","$(strip $(image))")
 	@echo "********************************************************************************"
-	@echo " error: Image file not specified: image=<a140808.bin>"
+	@echo " error: Image file not specified: image=<a140808_a????????.bin>"
 	@echo "********************************************************************************"
-	exit 16
+	@exit 16
    else
      ifeq ("", "$(shell find '$(strip $(image))' -type f -size 4M)")
 	@echo "********************************************************************************"
 	@echo " error: Image file \"$(strip $(image))\""
 	@echo "        not found or incorrect size."
 	@echo "********************************************************************************"
-	exit 16
+	@exit 16
      endif
    endif
 	@echo writing image file "$(strip $(image))" to device "$(strip $(flash))"
@@ -120,22 +120,23 @@ $(OWRT_ROOT):
 	@echo
 	@echo fetching openwrt...
 	wget -O- "$(OWRT_SRC_URL)" | tar xz
+	echo "r$(OWRT_VER)" > "$(OWRT_ROOT)/version"
 
-feeds: | $(OWRT_ROOT) $(OWRT_FEEDS)
-$(OWRT_FEEDS):
+feeds: $(OWRT_FEEDS)
+$(OWRT_FEEDS): $(OWRT_ROOT)
 	@echo
 	@echo applying feeds to openwrt...
 	"$(OWRT_ROOT)/scripts/feeds" update -a
 	"$(OWRT_ROOT)/scripts/feeds" install -a
 	@rm -f "$(OWRT_CFG)" # remove .config file that the feeds gen
 
-patch: | $(OWRT_ROOT) $(OWRT_VER)
-$(OWRT_VER):
+patch: feeds
 	@echo
-	@echo applying a140808 updates to openwrt...
+	@echo applying a140808 patches to openwrt...
+	$(foreach patch,$(PATCHES),if patch --dry-run -N -p1 -d "$(OWRT_ROOT)" < "$(patch)" 2>/dev/null; then patch -p1 -d "$(OWRT_ROOT)" < "$(patch)"; fi;)
 	cp -R "files/." "$(OWRT_ROOT)"
 
-cacerts: | patch
+cacerts: patch
     ifneq ($(wildcard $(OWRT_CACERT_SRC)),)
 	@echo copying CA certificate files...
 	@mkdir -p "$(OWRT_CACERT_TGT)"
@@ -144,11 +145,12 @@ cacerts: | patch
 	@echo no CA certificate files present
     endif
 
-config: | feeds patch $(OWRT_CFG)
-$(OWRT_CFG):
+config: $(OWRT_CFG)
+$(OWRT_CFG): patch
 	@echo
 	@echo generating openwrt .config file...
-	"$(GEN_CFG)"
+	cat "$(CFG_DIFF)" > "$(OWRT_CFG)"
+	$(MAKE) -C "$(OWRT_ROOT)" defconfig
 
 $(SERNUM):
 	$(MAKE) -C "tools/serialnum"
@@ -158,8 +160,7 @@ $(MAC2BIN):
 	$(MAKE) -C "tools/mac2bin"
 	mv "tools/mac2bin/mac2bin" "$(OUTBIN)"
 
-.PHONY: minipro
-minipro: | $(MINIPRO)
+minipro: $(MINIPRO)
 $(MINIPRO):
 	@if [ ! -d "$(MINIPRO_ROOT)" ]; then \
 		echo; \
@@ -219,7 +220,8 @@ ssh_safe: ssh_pw ssh_cert
 	echo "            sshcert=<filespec>" &&\
 	echo &&\
 	echo "********************************************************************************" &&\
-	exit 18 )
+	@exit 18 )
 
-.PHONY: all target image program feeds patch config minipro clean distclean ssh_none ssh_cert ssh_pw ssh_safe
+.PHONY: all target image program feeds patch cacerts config minipro clean distclean ssh_none ssh_cert ssh_pw ssh_safe
+
 

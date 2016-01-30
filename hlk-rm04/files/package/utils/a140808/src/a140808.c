@@ -17,7 +17,7 @@
 //
 
 #include <string.h> // strcmp
-#include <json/json.h>
+#include <json-c/json.h>
 
 // ip address begin
 #include <sys/types.h>

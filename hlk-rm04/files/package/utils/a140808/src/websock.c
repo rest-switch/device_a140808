@@ -48,11 +48,11 @@ enum ws_ready_state
 };
 static enum ws_ready_state s_ready_state = WS_CLOSED;
 
-static struct libwebsocket* s_pWs = NULL;
-static struct libwebsocket_context* s_pWsContext = NULL;
+static struct lws* s_pWs = NULL;
+static struct lws_context* s_pWsContext = NULL;
 
 // forward declare for callback
-int ws_onevent(struct libwebsocket_context*, struct libwebsocket*, enum libwebsocket_callback_reasons, void*, void*, size_t);
+int ws_onevent(struct lws*, enum lws_callback_reasons, void*, void*, size_t);
 
 
 ////////////////////////////////////////
@@ -99,9 +99,9 @@ int ws_connect(const char* p_host, const char* p_url_path, const int p_port, con
             }
         }
 
-        static struct libwebsocket_protocols s_protocols[] =
+        static struct lws_protocols s_protocols[] =
         {
-            {"ws_onevent",  ws_onevent,  0, 64, 0, NULL, 0},
+            {"ws_onevent",  ws_onevent,  0, 64, 0, NULL},
             { 0 } // end
         };
 
@@ -114,7 +114,7 @@ int ws_connect(const char* p_host, const char* p_url_path, const int p_port, con
 //        info.ka_probes = 3;
 //        info.ka_interval = 5;
 
-        s_pWsContext = libwebsocket_create_context(&info);
+        s_pWsContext = lws_create_context(&info);
         if(NULL == s_pWsContext)
         {
             log_err("ws_connect: failed to create libwebsocket context");
@@ -123,8 +123,8 @@ int ws_connect(const char* p_host, const char* p_url_path, const int p_port, con
     }
 
     s_ready_state = WS_CONNECTING;
-//    s_pWs = libwebsocket_client_connect(s_pWsContext, s_host, s_port, s_ssl_flags, s_url_path, s_host, s_host, 0, 13 /* -1==latest */);
-    s_pWs = libwebsocket_client_connect(s_pWsContext, s_host, s_port, s_ssl_flags, s_url_path, s_host, 0, 0, 13 /* -1==latest */);
+//    s_pWs = lws_client_connect(s_pWsContext, s_host, s_port, s_ssl_flags, s_url_path, s_host, s_host, 0, 13 /* -1==latest */);
+    s_pWs = lws_client_connect(s_pWsContext, s_host, s_port, s_ssl_flags, s_url_path, s_host, 0, 0, 13 /* -1==latest */);
     if(NULL == s_pWs)
     {
         log_err("ws_connect: libwebsocket connect failed");
@@ -154,7 +154,7 @@ void ws_send_ping(const char* p_msg)
     rb_set_data(&s_ping_buf, p_msg, write_len);
 
     // signal that we want an LWS_CALLBACK_CLIENT_WRITEABLE next service
-    libwebsocket_callback_on_writable(s_pWsContext, s_pWs);
+    lws_callback_on_writable(s_pWs);
 }
 
 ////////////////////////////////////////
@@ -172,7 +172,7 @@ void ws_send_text(const char* p_msg)
     rb_set_data(&s_text_buf, p_msg, write_len);
 
     // signal that we want an LWS_CALLBACK_CLIENT_WRITEABLE next service
-    libwebsocket_callback_on_writable(s_pWsContext, s_pWs);
+    lws_callback_on_writable(s_pWs);
 }
 
 
@@ -184,7 +184,7 @@ void ws_close(void)
     if(NULL != s_pWsContext)
     {
         s_ready_state = WS_CLOSING;
-        libwebsocket_context_destroy(s_pWsContext);
+        lws_context_destroy(s_pWsContext);
     }
 }
 
@@ -234,7 +234,7 @@ void ws_poll(void)
     }
     else
     {
-        libwebsocket_service(s_pWsContext, 100); // 100ms timeout
+        lws_service(s_pWsContext, 100); // 100ms timeout
         sleep_ms(125); // loop 8 times per sec
     }
 }
@@ -245,7 +245,7 @@ void ws_poll(void)
 // LWS_WRITE_BINARY
 // LWS_WRITE_PING
 // LWS_WRITE_PONG
-void ws_write_data(struct ring_buf_data* p_pd, enum libwebsocket_write_protocol p_proto, struct libwebsocket_context* p_pWsContext, struct libwebsocket* p_pWs)
+void ws_write_data(struct ring_buf_data* p_pd, enum lws_write_protocol p_proto, struct lws* p_pWs)
 {
     static unsigned char buf[LWS_SEND_BUFFER_PRE_PADDING + WRITE_BUF_MAX + LWS_SEND_BUFFER_POST_PADDING];
 
@@ -259,11 +259,11 @@ void ws_write_data(struct ring_buf_data* p_pd, enum libwebsocket_write_protocol 
     buf[LWS_SEND_BUFFER_PRE_PADDING + len] = '\0'; // add term null, assume we have space for it due to LWS_SEND_BUFFER_POST_PADDING
     log_debug(">>>>>>>>>sending %d bytes: %s", len, &buf[LWS_SEND_BUFFER_PRE_PADDING]);
 #endif // DEBUG
-    const int sent_bytes = libwebsocket_write(p_pWs, &buf[LWS_SEND_BUFFER_PRE_PADDING], len, p_proto);
+    const int sent_bytes = lws_write(p_pWs, &buf[LWS_SEND_BUFFER_PRE_PADDING], len, p_proto);
     if(sent_bytes < 0)
     {
         // not sure how how we went negative, but it will mess-up the math below
-        log_err("libwebsocket_write returned a negative result code: %d", sent_bytes);
+        log_err("lws_write returned a negative result code: %d", sent_bytes);
         return;
     }
     if(sent_bytes < len)
@@ -275,13 +275,12 @@ void ws_write_data(struct ring_buf_data* p_pd, enum libwebsocket_write_protocol 
         rb_set_data(p_pd, &buf[LWS_SEND_BUFFER_PRE_PADDING + sent_bytes], remain_bytes);
 
         // get notified as soon as we can write again
-        libwebsocket_callback_on_writable(p_pWsContext, p_pWs);
+        lws_callback_on_writable(p_pWs);
     }
 }
 
 ////////////////////////////////////////
-int ws_onevent(struct libwebsocket_context* p_pWsContext, struct libwebsocket* p_pWs,
-                enum libwebsocket_callback_reasons p_event, void* p_pUser, void* p_pData, size_t p_dataLen)
+int ws_onevent(struct lws* p_pWs, enum lws_callback_reasons p_event, void* p_pUser, void* p_pData, size_t p_dataLen)
 {
     switch(p_event)
     {
@@ -345,8 +344,8 @@ int ws_onevent(struct libwebsocket_context* p_pWsContext, struct libwebsocket* p
 
         case LWS_CALLBACK_CLIENT_WRITEABLE:
         {
-            ws_write_data(&s_ping_buf, LWS_WRITE_PING, p_pWsContext, p_pWs);
-            ws_write_data(&s_text_buf, LWS_WRITE_TEXT, p_pWsContext, p_pWs);
+            ws_write_data(&s_ping_buf, LWS_WRITE_PING, p_pWs);
+            ws_write_data(&s_text_buf, LWS_WRITE_TEXT, p_pWs);
             break;
         }
 

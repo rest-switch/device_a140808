@@ -34,10 +34,10 @@ include $(INCLUDE_DIR)/package.mk
 
 define Package/a140808
 	SECTION:=utils
-	CATEGORY:=Base system
+	CATEGORY:=Utilities
 	TITLE:=a140808 websockets client application
 	URL:=http://www.rest-switch.com
-	DEPENDS:=+libwebsockets +libjson
+	DEPENDS:=+libwebsockets-cyassl +libjson-c
 endef
 
 define Package/a140808/description
@@ -52,6 +52,10 @@ endef
 define Package/a140808/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/a140808 $(1)/usr/bin/
+	$(INSTALL_DIR) $(1)/etc/config
+	$(INSTALL_DATA) ./files/cloudcfg.config $(1)/etc/config/cloudcfg
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/a140808.init $(1)/etc/init.d/a140808
 	$(INSTALL_DIR) $(1)/etc/ssl/certs
     ifneq ($(wildcard ./files/*.pem),)
 	$(INSTALL_DATA) ./files/*.pem $(1)/etc/ssl/certs/

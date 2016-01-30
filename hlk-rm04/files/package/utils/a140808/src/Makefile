@@ -22,9 +22,9 @@ all: $(TARGET)
 
 OBJECTS = a140808.o daemon.o log.o msg_proc.o serial.o websock.o
 
-#CFLAGS += -std=gnu99
-CFLAGS += -std=c99
-LDFLAGS += -ljson -lwebsockets
+CFLAGS += -std=gnu99
+#CFLAGS += -std=c99
+LDFLAGS += -ljson-c -lwebsockets
 
 # compile
 a140808.o: a140808.c

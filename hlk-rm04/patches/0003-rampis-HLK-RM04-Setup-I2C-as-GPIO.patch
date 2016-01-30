@@ -1,0 +1,65 @@
+From 390fae670ba3942aa67ac18dfac1526e05ee581a Mon Sep 17 00:00:00 2001
+From: John Clark <inindev@gmail.com>
+Date: Fri, 22 Jan 2016 19:28:17 +0000
+Subject: [PATCH 3/6] rampis: HLK-RM04 - Setup I2C as GPIO
+
+The I2C function of the RT5350 SoC on the HLK-RM04 is used for GPIO1 and GPIO2.
+
+Take note that the I2C_SD pin is GPIO1 on the RT5350 and is exposed on the HLK-RM04 as GPIO0
+Likewise the I2C_SCLK pin is GPIO2 on the RT5350 and is exposed on the HLK-RM04 as GPIO1
+
+ group   mode 1    mode 2   hlk-rm04 pin & export
+  i2c    i2c_sd    gpio1   (pin 8, hlk-rm04:gpio0)
+  i2c    i2c_sclk  gpio2   (pin 9, hlk-rm04:gpio1)
+
+reference:
+  http://www.hlktech.net/product_detail.php?ProId=39
+  http://cdn.sparkfun.com/datasheets/Wireless/WiFi/RT5350.pdf
+
+Signed-off-by: John Clark <inindev@gmail.com>
+---
+ target/linux/ramips/dts/HLKRM04.dts | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/target/linux/ramips/dts/HLKRM04.dts b/target/linux/ramips/dts/HLKRM04.dts
+index 5f43642..713b51f 100644
+--- a/target/linux/ramips/dts/HLKRM04.dts
++++ b/target/linux/ramips/dts/HLKRM04.dts
+@@ -60,7 +60,7 @@
+ 	pinctrl {
+ 		state_default: pinctrl0 {
+ 			gpio {
+-				ralink,group = "jtag";
++				ralink,group = "i2c", "jtag";
+ 				ralink,function = "gpio";
+ 			};
+ 		};
+@@ -82,6 +82,25 @@
+ 		status = "okay";
+ 	};
+ 
++	gpio-export {
++		compatible = "gpio-export";
++		#size-cells = <0>;
++
++		/* I2C */
++		gpio1 {
++			/* I2C_I2C_SD */
++			gpio-export,name = "hlk-rm04:gpio0";
++			gpio-export,direction_may_change = <1>;
++			gpios = <&gpio0 1 0>;
++		};
++		gpio2 {
++			/* I2C_I2C_SCLK */
++			gpio-export,name = "hlk-rm04:gpio1";
++			gpio-export,direction_may_change = <1>;
++			gpios = <&gpio0 2 0>;
++		};
++	};
++
+ 	gpio-keys-polled {
+ 		compatible = "gpio-keys-polled";
+ 		#address-cells = <1>;
+-- 
+2.4.3
+

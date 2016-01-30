@@ -1,0 +1,97 @@
+From 700e8d06e733b9e3978fb624d84e9cb656834fbb Mon Sep 17 00:00:00 2001
+From: John Clark <inindev@gmail.com>
+Date: Fri, 22 Jan 2016 19:41:59 +0000
+Subject: [PATCH 4/6] ramips: HLK-RM04 - Enable GPIO14 for WPS button
+
+The top half of UARTF on the HLK-RM04 is used for GPIO.
+
+  mode 1   mode 2
+   RIN     GPIO14
+   DSR_N   GPIO13
+   DCD_N   GPIO12
+   DTR_N   GPIO11
+   RXD     GPIO10
+   CTS_N   GPIO09
+   TXD     GPIO08
+   RTS_N   GPIO07
+
+This patch applies 3'b101 mode to UARTF:
+
+   GPIO14
+   GPIO13
+   GPIO12
+   GPIO11
+   RXD
+   CTS_N
+   TXD
+   RTS_N
+
+Because the base rt5350.dtsi file forces 3'b000 mode, remove the pin setting from this file and apply it directly to the files that inherit from it (WIZFI630A.dts and WT1520.dtsi).  This change makes the rt5350.dtsi file consistent with the mt7620a.dtsi file.
+
+Signed-off-by: John Clark <inindev@gmail.com>
+---
+ target/linux/ramips/dts/HLKRM04.dts   | 5 +++++
+ target/linux/ramips/dts/WIZFI630A.dts | 2 ++
+ target/linux/ramips/dts/WT1520.dtsi   | 2 ++
+ target/linux/ramips/dts/rt5350.dtsi   | 3 ---
+ 4 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/target/linux/ramips/dts/HLKRM04.dts b/target/linux/ramips/dts/HLKRM04.dts
+index 713b51f..3c9a93c 100644
+--- a/target/linux/ramips/dts/HLKRM04.dts
++++ b/target/linux/ramips/dts/HLKRM04.dts
+@@ -63,6 +63,11 @@
+ 				ralink,group = "i2c", "jtag";
+ 				ralink,function = "gpio";
+ 			};
++
++			uartf_gpio {
++				ralink,group = "uartf";
++				ralink,function = "gpio uartf";
++			};
+ 		};
+ 	};
+ 
+diff --git a/target/linux/ramips/dts/WIZFI630A.dts b/target/linux/ramips/dts/WIZFI630A.dts
+index 39d68c3..e2a51ec 100644
+--- a/target/linux/ramips/dts/WIZFI630A.dts
++++ b/target/linux/ramips/dts/WIZFI630A.dts
+@@ -59,6 +59,8 @@
+ 			interrupt-parent = <&intc>;
+ 			interrupts = <5>;
+ 			reg-shift = <2>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&uartf_pins>;
+ 			status = "okay";
+ 		};
+ 
+diff --git a/target/linux/ramips/dts/WT1520.dtsi b/target/linux/ramips/dts/WT1520.dtsi
+index b8c4e0a..13ff268 100644
+--- a/target/linux/ramips/dts/WT1520.dtsi
++++ b/target/linux/ramips/dts/WT1520.dtsi
+@@ -15,6 +15,8 @@
+ 
+ 	palmbus@10000000 {
+ 		uart@500 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uartf_pins>;
+ 			status = "okay";
+ 		};
+ 	};
+diff --git a/target/linux/ramips/dts/rt5350.dtsi b/target/linux/ramips/dts/rt5350.dtsi
+index 27f7bf6..b8712e9 100644
+--- a/target/linux/ramips/dts/rt5350.dtsi
++++ b/target/linux/ramips/dts/rt5350.dtsi
+@@ -94,9 +94,6 @@
+ 
+ 			reg-shift = <2>;
+ 
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&uartf_pins>;
+-
+ 			status = "disabled";
+ 		};
+ 
+-- 
+2.4.3
+
