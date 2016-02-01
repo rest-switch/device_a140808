@@ -1,6 +1,7 @@
 *.o
 avr/tools
 bin
+*_ca_public.cer
 openwrt-master
 minipro
 
