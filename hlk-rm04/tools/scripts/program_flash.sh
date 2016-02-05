@@ -24,9 +24,8 @@ BIN_FILE_BYTES=4194304
 
 
 main() {
-    local bin_file="$1"
+    local bin_file="${1}"
     local device_name="$2"
-    local max_depth="$3"
 
     if [ ! -e "$bin_file" ]; then
         echo "file not found: [$bin_file]"
@@ -49,31 +48,22 @@ main() {
         device_name="W25Q32BV"
     fi
 
-    if [ -z "$max_depth" ]; then
-        max_depth=2
-    fi
-
-    write_device "$bin_file" "$device_name" "$max_depth"
+    write_device "$bin_file" "$device_name"
     return $?
 }
 
 write_device() {
     local bin_file="$1"
     local device_name="$2"
-    local max_depth="$3"
-
-    if [ "$max_depth" -lt "1" ]; then
-        return 11
-    fi
 
     local output
     output=$("$MINIPRO" -p "$device_name" -w "$bin_file" 3>&1 1>&2 2>&3)
-    if [ "$?" -eq "0" ] ; then
-        return 0;
+    if [ "$?" -eq "0" ]; then
+        return 0
     fi
 
-    local device_id
-    device_id=$(echo "$output" | sed -rn 's/.*got (0x[a-f0-9]*).*/\1/p')
+    # auto detect
+    local device_id=$(echo "$output" | sed -rn 's/.*got (0x[a-f0-9]*).*/\1/p')
     case $device_id in
         0x9d467f)
             device_name="PM25LQ032C"
@@ -86,12 +76,16 @@ write_device() {
             ;;
         *)
             echo "unknown device: [$device_id]"
-            return 12
+            return 11
             ;;
     esac
 
-    write_device "$bin_file" "$device_name" $((max_depth - 1))
-    return $?
+    "$MINIPRO" -p "$device_name" -w "$bin_file"
+    if [ "$?" -ne "0" ]; then
+        return 12
+    fi
+
+    return 0
 }
 
 main "$@"
