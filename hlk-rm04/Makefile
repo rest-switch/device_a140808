@@ -85,23 +85,17 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 	@tr '\000' '\377' < /dev/zero | dd bs=1 count=$$((0x400000 - $$(stat -c '%s' "$(OUTBIN)/$(IMGFILE)"))) >> "$(OUTBIN)/$(IMGFILE)"
 
 program: minipro
-   ifneq ("","$(strip $(sshcert))")
+   ifeq ("","$(filter $(strip $(flash)), MX25L3206E PM25LQ032C W25Q32BV)")
 	@echo "********************************************************************************"
-	@echo " error: Flash device not specified: flash=W25Q32BV"
+	@echo " error: The flash device must be either MX25L3206E, PM25LQ032C, or W25Q32BV"
+	@echo "             eg: flash=MX25L3206E or flash=W25Q32BV"
 	@echo "********************************************************************************"
 	@exit 14
    endif
-     ifeq ("","$(filter $(strip $(flash)), MX25L3206E PM25LQ032C W25Q32BV)")
-	@echo "********************************************************************************"
-	@echo " error: The flash device must be either MX25L3206E, PM25LQ032C, or W25Q32BV"
-	@echo "            eg:  flash=MX25L3206E or flash=W25Q32BV"
-	@echo "********************************************************************************"
-	@exit 14
-     endif
 
    ifeq ("","$(strip $(image))")
 	@echo "********************************************************************************"
-	@echo " error: Image file not specified: image=<a140808_a????????.bin>"
+	@echo " error: Image file not specified - eg: image=<a140808_a????????.bin>"
 	@echo "********************************************************************************"
 	@exit 16
    else
@@ -110,7 +104,7 @@ program: minipro
 	@echo " error: Image file \"$(strip $(image))\""
 	@echo "        not found or incorrect size."
 	@echo "********************************************************************************"
-	@exit 16
+	@exit 18
      endif
    endif
 	@echo writing image file "$(strip $(image))" to device "$(strip $(flash))"
@@ -220,7 +214,7 @@ ssh_safe: ssh_pw ssh_cert
 	echo "            sshcert=<filespec>" &&\
 	echo &&\
 	echo "********************************************************************************" &&\
-	@exit 18 )
+	@exit 20 )
 
 .PHONY: all target image program feeds patch cacerts config minipro clean distclean ssh_none ssh_cert ssh_pw ssh_safe
 
