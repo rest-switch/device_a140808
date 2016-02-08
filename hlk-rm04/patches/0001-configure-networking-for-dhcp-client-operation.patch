@@ -1,7 +1,7 @@
-From f23fcc1b3dc79d5e3541a8a4e81afa632e73f859 Mon Sep 17 00:00:00 2001
+From 0c726936ac1a8dbdb8b264ca7da7257641b90a40 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Sat, 30 Jan 2016 14:04:51 +0000
-Subject: [PATCH 5/6] configure networking for dhcp client operation
+Subject: [PATCH 1/2] configure networking for dhcp client operation
 
 ---
  package/base-files/files/bin/config_generate       | 12 ++++----
@@ -12,7 +12,7 @@ Subject: [PATCH 5/6] configure networking for dhcp client operation
  delete mode 100644 target/linux/ramips/base-files/lib/preinit/07_set_preinit_iface_ramips
 
 diff --git a/package/base-files/files/bin/config_generate b/package/base-files/files/bin/config_generate
-index 9218788..f0d7c07 100755
+index 92eb14b..26ffacf 100755
 --- a/package/base-files/files/bin/config_generate
 +++ b/package/base-files/files/bin/config_generate
 @@ -15,8 +15,8 @@ generate_static_network() {

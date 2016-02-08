@@ -1,7 +1,7 @@
-From a4a0d0b81504e0292d0cc8aa8cfc7488060f05c8 Mon Sep 17 00:00:00 2001
+From 392538e5f990f864f09b04ffb14cf739da385c9c Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Sat, 30 Jan 2016 14:06:01 +0000
-Subject: [PATCH 6/6] set hostname and add ll alias
+Subject: [PATCH 2/2] set hostname and add ll alias
 
 ---
  package/base-files/files/etc/config/system | 2 +-
@@ -20,7 +20,7 @@ index 3dfbfc4..1e6dd3c 100644
  
  config timeserver ntp
 diff --git a/package/base-files/files/etc/profile b/package/base-files/files/etc/profile
-index 8a55fec..a1be829 100644
+index ad8fe12..292254b 100644
 --- a/package/base-files/files/etc/profile
 +++ b/package/base-files/files/etc/profile
 @@ -11,6 +11,9 @@ export HOME=$(grep -e "^${USER:-root}:" /etc/passwd | cut -d ":" -f 6)
