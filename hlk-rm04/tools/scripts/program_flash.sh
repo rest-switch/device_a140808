@@ -20,16 +20,20 @@
 MYFILE=$(readlink -f "$0")
 MYDIR=$(dirname "${MYFILE}")
 MINIPRO="${MYDIR}/../minipro/minipro"
-BIN_FILE_BYTES=4194304
+PROJBIN="${MYDIR}/../../bin"
+BIN_FILE_BYTES=$((0x400000))
 
 
 main() {
     local bin_file="${1}"
     local device_name="$2"
 
-    if [ ! -e "$bin_file" ]; then
-        echo "file not found: [$bin_file]"
-        return 1
+    if [ -z "$bin_file" ]; then
+        bin_file=$(find_imgfile)
+        if [ -z "$bin_file" ]; then
+            echo "error: specify the binary file to write to flash"
+            return 1
+        fi
     fi
 
     local file_bytes
@@ -52,10 +56,23 @@ main() {
     return $?
 }
 
+
+find_imgfile() {
+    local files
+    files=$(find "$PROJBIN" -maxdepth 1 -type f -size "$BIN_FILE_BYTES"'c')
+    local file_count=$(echo "$files" | wc -l)
+    if [ "$file_count" -eq "1" ]; then
+        realpath "$files"
+    fi
+}
+
+
 write_device() {
     local bin_file="$1"
     local device_name="$2"
 
+    echo "programming flash - file: $bin_file"
+    echo "programming flash - device: $device_name"
     local output
     output=$("$MINIPRO" -p "$device_name" -w "$bin_file" 3>&1 1>&2 2>&3)
     if [ "$?" -eq "0" ]; then
@@ -80,8 +97,10 @@ write_device() {
             ;;
     esac
 
+    echo "programming flash - device: $device_name"
     "$MINIPRO" -p "$device_name" -w "$bin_file"
     if [ "$?" -ne "0" ]; then
+        echo "programming failed"
         return 12
     fi
 
