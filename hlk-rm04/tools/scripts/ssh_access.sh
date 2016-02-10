@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2015 The REST Switch Authors
+# Copyright 2015-2016 The REST Switch Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ ssh_cert() {
             ;;
         gen)
             # generate private key
-            printf "generating $SSH_CERT_BITS bit rsa ssh certificate...\n"
+            printf "generating %s bit rsa ssh certificate...\n" "$SSH_CERT_BITS"
             if [ -e "${SSH_CERT_PVT}" ]; then
                 rm "${SSH_CERT_PVT}"
             fi
@@ -74,7 +74,7 @@ ssh_cert() {
                 exit 12
             fi
 
-            if [ $pvt_cert_bytes -lt 1600 ]; then
+            if [ "$pvt_cert_bytes" -lt "1600" ]; then
                 errormsg "invalid ssh private key: specify the path to a private of at least 2048 bits"
                 exit 13
             fi
@@ -108,7 +108,7 @@ ssh_cert() {
         exit 16
     fi
 
-    printf "ssh access enabled --> private certificate: ${pvt_cert}\n"
+    printf "ssh access enabled --> private certificate: %s\n" "${pvt_cert}"
     return 0
 }
 
@@ -140,10 +140,10 @@ ssh_pass() {
                 printf "\nSet SSH password for root account:"
                 stty -echo
                 printf "\npassword: "
-                read secret1
+                read -r secret1
                 printf "\n"
                 printf "confirm: "
-                read secret2
+                read -r secret2
                 printf "\n"
                 stty echo
                 if [ "$secret1" != "$secret2" ]; then
@@ -194,7 +194,7 @@ has_cert() {
         exit 20
     fi
 
-    if [ $pub_cert_bytes -lt 380 ]; then
+    if [ "$pub_cert_bytes" -lt "380" ]; then
         return 1  # has cert
     fi
 
