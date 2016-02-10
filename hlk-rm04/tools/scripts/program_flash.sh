@@ -22,6 +22,7 @@ MYDIR=$(dirname "${MYFILE}")
 MINIPRO="${MYDIR}/../minipro/minipro"
 PROJBIN="${MYDIR}/../../bin"
 BIN_FILE_BYTES=$((0x400000))
+RETVAL=''
 
 
 main() {
@@ -29,7 +30,7 @@ main() {
     local device_name="$2"
 
     if [ -z "$bin_file" ]; then
-        bin_file=$(find_imgfile)
+        find_imgfile; bin_file="$RETVAL"
         if [ -z "$bin_file" ]; then
             echo "error: specify the binary file to write to flash"
             return 1
@@ -39,7 +40,7 @@ main() {
     local file_bytes
     file_bytes=$(stat -c '%s' "$bin_file")
     if [ "$?" -ne "0" ]; then
-        echo "failed to get file stats: [$bin_bytes]"
+        echo "failed to get file stats: [$bin_file]"
         return 2
     fi
 
@@ -58,12 +59,47 @@ main() {
 
 
 find_imgfile() {
+    RETVAL=''
+
+    local projbin_leaf
+    projbin_leaf=$(basename "$PROJBIN")
     local files
-    files=$(find "$PROJBIN" -maxdepth 1 -type f -size "$BIN_FILE_BYTES"'c')
-    local file_count=$(echo "$files" | wc -l)
-    if [ "$file_count" -eq "1" ]; then
-        realpath "$files"
+    files=$(find "$PROJBIN" -maxdepth 1 -type f -size "$BIN_FILE_BYTES"'c' -printf "%TY-%Tm-%Td %TH:%TM:%0.2TS $projbin_leaf/%P %p\n" | sort -r)
+    local file_count
+    file_count=$(echo "$files" | wc -l)
+
+    if [ "$file_count" -lt "1" ]; then
+        return
     fi
+
+    local file
+    if [ "$file_count" -eq "1" ]; then
+        file=$(echo "$files" | cut -d' ' -f4)
+        RETVAL=$(realpath "$file")
+        return
+    fi
+
+    echo ""
+    echo "Select the image file to flash:"
+    echo ""
+    for i in $(seq 1 "$file_count")
+    do
+        file=$(echo "$files" | sed -n "$i p" | cut -d' ' -f1-3)
+        echo "  $i) $file"
+    done
+    echo "  q) quit"
+    echo ""
+    read -p "choice: " num
+    echo ""
+
+    case "$num" in
+        ''|*[!0-9]*) ;;
+        0) ;;
+        *)
+            file=$(echo "$files" | sed -n "$num p" | cut -d' ' -f4)
+            RETVAL=$(realpath "$file")
+            ;;
+    esac
 }
 
 
@@ -80,7 +116,8 @@ write_device() {
     fi
 
     # auto detect
-    local device_id=$(echo "$output" | sed -rn 's/.*got (0x[a-f0-9]*).*/\1/p')
+    local device_id
+    device_id=$(echo "$output" | sed -rn 's/.*got (0x[a-f0-9]*).*/\1/p')
     case $device_id in
         0x9d467f)
             device_name="PM25LQ032C"
