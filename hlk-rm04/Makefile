@@ -33,6 +33,7 @@ OWRT_CACERT_SRC  := ca*certs/*_ca_public.cer
 OWRT_CACERT_TGT  := $(OWRT_ROOT)/package/utils/a140808/files
 OWRT_TGT         := $(OWRT_ROOT)/bin/ramips/openwrt-$(shell cat "$(OWRT_ROOT)/version")-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 SSH_TOOL         := tools/scripts/ssh_access.sh
+FLASH_TOOL       := tools/scripts/program_flash.sh
 MINIPRO_ROOT     := tools/minipro
 MINIPRO          := $(MINIPRO_ROOT)/minipro
 MINIPRO_SRC_URL  := https://github.com/inindev/minipro/archive/master.tar.gz
@@ -85,30 +86,7 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 	@tr '\000' '\377' < /dev/zero | dd bs=1 count=$$((0x400000 - $$(stat -c '%s' "$(OUTBIN)/$(IMGFILE)"))) >> "$(OUTBIN)/$(IMGFILE)"
 
 program: minipro
-   ifeq ("","$(filter $(strip $(flash)), MX25L3206E PM25LQ032C W25Q32BV)")
-	@echo "********************************************************************************"
-	@echo " error: The flash device must be either MX25L3206E, PM25LQ032C, or W25Q32BV"
-	@echo "             eg: flash=MX25L3206E or flash=W25Q32BV"
-	@echo "********************************************************************************"
-	@exit 14
-   endif
-
-   ifeq ("","$(strip $(image))")
-	@echo "********************************************************************************"
-	@echo " error: Image file not specified - eg: image=<a140808_a????????.bin>"
-	@echo "********************************************************************************"
-	@exit 16
-   else
-     ifeq ("", "$(shell find '$(strip $(image))' -type f -size 4M)")
-	@echo "********************************************************************************"
-	@echo " error: Image file \"$(strip $(image))\""
-	@echo "        not found or incorrect size."
-	@echo "********************************************************************************"
-	@exit 18
-     endif
-   endif
-	@echo writing image file "$(strip $(image))" to device "$(strip $(flash))"
-	"$(MINIPRO)" -p "$(strip $(flash))" -w "$(strip $(image))"
+	"$(FLASH_TOOL)" --makefile_mode=1 -p "$(strip $(flash))" -f "$(strip $(image))"
 
 $(OWRT_ROOT):
 	@echo
