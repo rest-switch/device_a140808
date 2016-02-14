@@ -33,7 +33,7 @@ OWRT_CACERT_SRC  := ca*certs/*_ca_public.cer
 OWRT_CACERT_TGT  := $(OWRT_ROOT)/package/utils/a140808/files
 OWRT_TGT         := $(OWRT_ROOT)/bin/ramips/openwrt-$(shell cat "$(OWRT_ROOT)/version")-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 SSH_TOOL         := tools/scripts/ssh_access.sh
-FLASH_TOOL       := tools/scripts/program_flash.sh
+FLASH_TOOL       := tools/scripts/program_flash.py
 MINIPRO_ROOT     := tools/minipro
 MINIPRO          := $(MINIPRO_ROOT)/minipro
 MINIPRO_SRC_URL  := https://github.com/inindev/minipro/archive/master.tar.gz
@@ -86,7 +86,51 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 	@tr '\000' '\377' < /dev/zero | dd bs=1 count=$$((0x400000 - $$(stat -c '%s' "$(OUTBIN)/$(IMGFILE)"))) >> "$(OUTBIN)/$(IMGFILE)"
 
 program: minipro
-	"$(FLASH_TOOL)" --makefile_mode=1 -p "$(strip $(flash))" -f "$(strip $(image))"
+	@python "$(FLASH_TOOL)" -p "$(strip $(flash))" -f "$(strip $(image))" 2>/dev/null || ( rc=$$?; \
+	if [ "$$rc" -eq "2" ] ; then \
+	    echo "********************************************************************************"; \
+	    echo " error: Detected a flash memory other than MX25L3206E, PM25LQ032C, or W25Q32BV "; \
+	    echo "        manually specify the flash memory name using: flash=xxxxxx"; \
+	    echo "        see: minipro/devices.h for a complete list of flash names"; \
+	    echo "    *** please report the new memory name to: johnc@restswitch.com ***"; \
+	    echo "********************************************************************************"; \
+	    exit 2; \
+	elif [ "$$rc" -eq "3" ] ; then \
+	    echo "********************************************************************************"; \
+	    echo " error: The flash device must be either MX25L3206E, PM25LQ032C, or W25Q32BV"; \
+	    echo "             eg: flash=MX25L3206E or flash=W25Q32BV"; \
+	    echo "            see: minipro/devices.h for the complete list"; \
+	    echo "********************************************************************************"; \
+	    exit 3; \
+	elif [ "$$rc" -eq "4" ] ; then \
+	    echo "********************************************************************************"; \
+	    echo " error: Invalid flash name specified. Check flash= setting and try again."; \
+	    echo "            see: minipro/devices.h for the complete list"; \
+	    echo "********************************************************************************"; \
+	    exit 4; \
+	elif [ "$$rc" -eq "5" ] ; then \
+	    echo "********************************************************************************"; \
+	    echo " error: Image file not found or not specified - eg: image=a140808_a????????.bin"; \
+	    echo "********************************************************************************"; \
+	    exit 5; \
+	elif [ "$$rc" -eq "6" ] ; then \
+	    echo "********************************************************************************"; \
+	    echo " error: Image file incorrect size: \"$(strip $(image))\""; \
+	    echo "********************************************************************************"; \
+	    exit 6; \
+	elif [ "$$rc" -eq "8" ] ; then \
+	    echo "********************************************************************************"; \
+	    echo " io error: Check Minipro and device connections and try again."; \
+	    echo "********************************************************************************"; \
+	    exit 8; \
+	else \
+	    echo "********************************************************************************"; \
+	    echo " error: Programming failed with python script error $$rc"; \
+	    echo "        Check connections and try again."; \
+	    echo "        Debug using the script directly: tools/scripts/program_flash.py"; \
+	    echo "********************************************************************************"; \
+	    exit 9; \
+	fi )
 
 $(OWRT_ROOT):
 	@echo
@@ -169,30 +213,30 @@ ssh_pw:
 
 ssh_safe: ssh_pw ssh_cert
 	@"$(SSH_TOOL)" "-a" || ( \
-	echo "********************************************************************************" &&\
-	echo " error: No root password or cert file specified." &&\
-	echo "        ssh access will not be possible without a root password or" &&\
-	echo "        RSA certificate file. Specify "make ssh=none" if this is desired." &&\
-	echo &&\
-	echo "        options" &&\
-	echo "        ---------" &&\
-	echo "          no ssh access:" &&\
-	echo "            ssh=none" &&\
-	echo "          no ssh password access:" &&\
-	echo "            sshpw=none" &&\
-	echo "          ssh password access (prompt):" &&\
-	echo "            sshpw=pmt" &&\
-	echo "          ssh password access:" &&\
-	echo "            sshpw=<password>" &&\
-	echo "          no ssh certificate access:" &&\
-	echo "            sshcert=none" &&\
-	echo "          ssh certificate access, create new cert:" &&\
-	echo "            sshcert=gen" &&\
-	echo "          ssh certificate access, use existing cert:" &&\
-	echo "            sshcert=<filespec>" &&\
-	echo &&\
-	echo "********************************************************************************" &&\
-	@exit 20 )
+	echo "********************************************************************************"; \
+	echo " error: No root password or cert file specified."; \
+	echo "        ssh access will not be possible without a root password or"; \
+	echo "        RSA certificate file. Specify "make ssh=none" if this is desired."; \
+	echo ""; \
+	echo "        options"; \
+	echo "        ---------"; \
+	echo "          no ssh access:"; \
+	echo "            ssh=none"; \
+	echo "          no ssh password access:"; \
+	echo "            sshpw=none"; \
+	echo "          ssh password access (prompt):"; \
+	echo "            sshpw=pmt"; \
+	echo "          ssh password access:"; \
+	echo "            sshpw=<password>"; \
+	echo "          no ssh certificate access:"; \
+	echo "            sshcert=none"; \
+	echo "          ssh certificate access, create new cert:"; \
+	echo "            sshcert=gen"; \
+	echo "          ssh certificate access, use existing cert:"; \
+	echo "            sshcert=<filespec>"; \
+	echo ""; \
+	echo "********************************************************************************"; \
+	exit 14 )
 
 .PHONY: all target image program feeds patch cacerts config minipro clean distclean ssh_none ssh_cert ssh_pw ssh_safe
 
