@@ -235,7 +235,4 @@ if __name__ == '__main__':
     except:
         sys.stderr.write('error 9: programming failed\n')
         sys.exit(9)
-    # normal exit
-    sys.exit(0)
-
 
