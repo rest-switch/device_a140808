@@ -142,8 +142,9 @@ def write_flash(image_file, flash_name):
     print('   Image file name:   {0}'.format(image_file))
     print('')
     sp = subprocess.Popen([MINIPRO, '-p',flash_name, '-w',image_file], stderr=subprocess.PIPE)
+    err = sp.communicate()[1]
     if sp.returncode != 0:
-        err = sp.communicate()[1].strip().lower()
+        err = err.strip().lower()
         if err.startswith('unknown device'): raise FlashUnknownError('unknown flash device name specified')
         if err.startswith('invalid device'): raise FlashInvalidError('invalid flash device name specified: {0}'.format(err[err.find('expect'):]))
         raise IOError('flash device programming failed, check connections and try again')
