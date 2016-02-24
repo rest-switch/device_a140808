@@ -1,0 +1,49 @@
+From 29c8b4bf02cf31525a2c0a033b329d364d9abd16 Mon Sep 17 00:00:00 2001
+From: John Clark <inindev@gmail.com>
+Date: Wed, 24 Feb 2016 00:58:57 +0000
+Subject: [PATCH 2/3] rt2x00: use mac2 for wireless
+
+Signed-off-by: John Clark <inindev@gmail.com>
+---
+ .../patches/911-rt2x00-use-mac2-for-wireless.patch | 29 ++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+ create mode 100644 package/kernel/mac80211/patches/911-rt2x00-use-mac2-for-wireless.patch
+
+diff --git a/package/kernel/mac80211/patches/911-rt2x00-use-mac2-for-wireless.patch b/package/kernel/mac80211/patches/911-rt2x00-use-mac2-for-wireless.patch
+new file mode 100644
+index 0000000..1ecb648
+--- /dev/null
++++ b/package/kernel/mac80211/patches/911-rt2x00-use-mac2-for-wireless.patch
+@@ -0,0 +1,29 @@
++index 9524564..fc2267a 100644
++--- a/drivers/net/wireless/ralink/rt2x00/rt2800lib.c
+++++ b/drivers/net/wireless/ralink/rt2x00/rt2800lib.c
++@@ -222,9 +222,9 @@ static void rt2800_rf_write(struct rt2x00_dev *rt2x00dev,
++ static const unsigned int rt2800_eeprom_map[EEPROM_WORD_COUNT] = {
++ 	[EEPROM_CHIP_ID]		= 0x0000,
++ 	[EEPROM_VERSION]		= 0x0001,
++-	[EEPROM_MAC_ADDR_0]		= 0x0002,
++-	[EEPROM_MAC_ADDR_1]		= 0x0003,
++-	[EEPROM_MAC_ADDR_2]		= 0x0004,
+++	[EEPROM_MAC_ADDR_0]		= 0x0017,
+++	[EEPROM_MAC_ADDR_1]		= 0x0018,
+++	[EEPROM_MAC_ADDR_2]		= 0x0019,
++ 	[EEPROM_NIC_CONF0]		= 0x001a,
++ 	[EEPROM_NIC_CONF1]		= 0x001b,
++ 	[EEPROM_FREQ]			= 0x001d,
++@@ -262,9 +262,9 @@ static const unsigned int rt2800_eeprom_map[EEPROM_WORD_COUNT] = {
++ static const unsigned int rt2800_eeprom_map_ext[EEPROM_WORD_COUNT] = {
++ 	[EEPROM_CHIP_ID]		= 0x0000,
++ 	[EEPROM_VERSION]		= 0x0001,
++-	[EEPROM_MAC_ADDR_0]		= 0x0002,
++-	[EEPROM_MAC_ADDR_1]		= 0x0003,
++-	[EEPROM_MAC_ADDR_2]		= 0x0004,
+++	[EEPROM_MAC_ADDR_0]		= 0x0017,
+++	[EEPROM_MAC_ADDR_1]		= 0x0018,
+++	[EEPROM_MAC_ADDR_2]		= 0x0019,
++ 	[EEPROM_NIC_CONF0]		= 0x001a,
++ 	[EEPROM_NIC_CONF1]		= 0x001b,
++ 	[EEPROM_NIC_CONF2]		= 0x001c,
+-- 
+2.4.3
+

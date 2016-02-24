@@ -1,8 +1,9 @@
-From 392538e5f990f864f09b04ffb14cf739da385c9c Mon Sep 17 00:00:00 2001
+From 0fce5170a812313f01ee6de6fb839f0137a93c55 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Sat, 30 Jan 2016 14:06:01 +0000
-Subject: [PATCH 2/2] set hostname and add ll alias
+Subject: [PATCH 3/3] set hostname and add ll alias
 
+Signed-off-by: John Clark <inindev@gmail.com>
 ---
  package/base-files/files/etc/config/system | 2 +-
  package/base-files/files/etc/profile       | 3 +++
