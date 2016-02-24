@@ -30,6 +30,8 @@
 #include "msg_proc.h"
 #include "websock.h"
 
+#define SERNUM_OFFSET  0x400
+
 
 ////////////////////////////////////////
 static bool s_run = false;
@@ -63,7 +65,7 @@ int get_serial(char* p_buf, const size_t p_len)
         return(-1);
     }
 
-    if(fseek(pfd, 0x0107, SEEK_SET) < 0)
+    if(fseek(pfd, SERNUM_OFFSET, SEEK_SET) < 0)
     {
         printf("fseek failed, err: %d\n", errno);
         return(-1);

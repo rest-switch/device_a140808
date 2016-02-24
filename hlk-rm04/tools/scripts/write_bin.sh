@@ -22,6 +22,10 @@ MYFILE=$(readlink -f "$0")
 MYDIR=$(dirname "${MYFILE}")
 MAC2BIN="${MYDIR}/../../bin/mac2bin"
 GENSERIAL="${MYDIR}/../../bin/serialnum"
+MAC1A_ADDR=$((0x40004))
+MAC1B_ADDR=$((0x40028))
+MAC2_ADDR=$((0x4002e))
+SERIAL_ADDR=$((0x40400))
 
 
 #
@@ -46,9 +50,9 @@ update_mac() {
     echo "    MAC 2: ${mac2}"
     echo
     echo
-    "${MAC2BIN}" "${mac1}" | dd bs=1 of="${target}" count=6 seek=262148 conv=notrunc
-    "${MAC2BIN}" "${mac1}" | dd bs=1 of="${target}" count=6 seek=262184 conv=notrunc
-    "${MAC2BIN}" "${mac2}" | dd bs=1 of="${target}" count=6 seek=262190 conv=notrunc
+    "${MAC2BIN}" "${mac1}" | dd bs=1 of="${target}" count=6 seek=$MAC1A_ADDR conv=notrunc
+    "${MAC2BIN}" "${mac1}" | dd bs=1 of="${target}" count=6 seek=$MAC1B_ADDR conv=notrunc
+    "${MAC2BIN}" "${mac2}" | dd bs=1 of="${target}" count=6 seek=$MAC2_ADDR conv=notrunc
 }
 
 
@@ -75,7 +79,7 @@ update_devid() {
     echo
     echo
 
-    echo "${serial}" | dd bs=1 of="${target}" count=9 seek=262407 conv=notrunc
+    echo "${serial}" | dd bs=1 of="${target}" count=9 seek=$SERIAL_ADDR conv=notrunc
     mv "${target}" "${new_target}"
 }
 
