@@ -1,4 +1,4 @@
-From 29c8b4bf02cf31525a2c0a033b329d364d9abd16 Mon Sep 17 00:00:00 2001
+From ec56b70abedce705cadf8124cf7a15f46ecd92e7 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Wed, 24 Feb 2016 00:58:57 +0000
 Subject: [PATCH 2/3] rt2x00: use mac2 for wireless
@@ -45,5 +45,5 @@ index 0000000..1ecb648
 + 	[EEPROM_NIC_CONF1]		= 0x001b,
 + 	[EEPROM_NIC_CONF2]		= 0x001c,
 -- 
-2.4.3
+2.5.0
 
