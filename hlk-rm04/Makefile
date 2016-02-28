@@ -37,7 +37,10 @@ FLASH_TOOL       := tools/scripts/program_flash.py
 MINIPRO_ROOT     := tools/minipro
 MINIPRO          := $(MINIPRO_ROOT)/minipro
 MINIPRO_SRC_URL  := https://github.com/inindev/minipro/archive/master.tar.gz
-
+MAC1A_ADDR       := $(shell echo -n $$((0x40004)))
+MAC1B_ADDR       := $(shell echo -n $$((0x40028)))
+MAC2_ADDR        := $(shell echo -n $$((0x4002e)))
+SERIAL_ADDR      := $(shell echo -n $$((0x40400)))
 
 .DEFAULT all: target
 
@@ -76,11 +79,11 @@ image: | $(TARGET) $(SERNUM) $(MAC2BIN)
 
 	cp "$(UBOOT)" "$(OUTBIN)/$(IMGFILE)"
 	# mac addresses
-	"$(MAC2BIN)" "$(MAC)"  | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=6 seek=262148 conv=notrunc
-	"$(MAC2BIN)" "$(MAC)"  | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=6 seek=262184 conv=notrunc
-	"$(MAC2BIN)" "$(MAC2)" | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=6 seek=262190 conv=notrunc
+	"$(MAC2BIN)" "$(MAC)"  | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=6 seek=$(MAC1A_ADDR) conv=notrunc
+	"$(MAC2BIN)" "$(MAC)"  | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=6 seek=$(MAC1B_ADDR) conv=notrunc
+	"$(MAC2BIN)" "$(MAC2)" | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=6 seek=$(MAC2_ADDR) conv=notrunc
 	# serial number
-	@echo -n $(DEVID) | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=9 seek=262407 conv=notrunc
+	@echo -n $(DEVID) | dd bs=1 of="$(OUTBIN)/$(IMGFILE)" count=9 seek=$(SERIAL_ADDR) conv=notrunc
 	cat "$(TARGET)" >> "$(OUTBIN)/$(IMGFILE)"
 	# padding
 	@tr '\000' '\377' < /dev/zero | dd bs=1 count=$$((0x400000 - $$(stat -c '%s' "$(OUTBIN)/$(IMGFILE)"))) >> "$(OUTBIN)/$(IMGFILE)"
