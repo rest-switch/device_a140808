@@ -37,12 +37,20 @@ update_mac() {
 
     echo "${mac1}" | grep -iq '[0-9a-f]\{12\}'
     if [ $? -ne 0 ]; then
-        echo
-        echo "error: The MAC address \"${mac1}\" is invalid. A valid MAC address must be 12 hex chars: mac=aabbccddeeff"
-        echo
+        echo "***"
+        echo "***  ERROR: The MAC address \"${mac1}\" is invalid. A valid MAC address must be 12 hex chars: mac=aabbccddeeff"
+        echo "***"
         exit 2
     fi
     local mac2=$(printf "%x" $((0x${mac1} + 1)))
+
+    if [ ! -x "${MAC2BIN}" ] ; then
+        echo "***"
+        echo "***  ERROR: bin/mac2bin file not found"
+        echo '***         compile using: "make bin/mac2bin"'
+        echo "***"
+        exit 4
+    fi
 
     echo
     echo "  Updating MAC addresses for image file: ${target}"
@@ -68,7 +76,7 @@ update_devid() {
         echo
         echo "error: The device id \"${serial}\" is invalid. A valid device id must be 9 chars: mac=abc123xyz"
         echo
-        exit 3
+        exit 6
     fi
     local new_target="$(echo "${target}" | sed "s/_[[:alnum:]]\{9\}.bin/_${serial}.bin/")"
 
@@ -80,7 +88,8 @@ update_devid() {
     echo
 
     echo "${serial}" | dd bs=1 of="${target}" count=9 seek=$SERIAL_ADDR conv=notrunc
-    mv "${target}" "${new_target}"
+
+    [ "${target}" != "${new_target}" ] && mv "${target}" "${new_target}"
 }
 
 
@@ -90,9 +99,9 @@ update_devid() {
 report_info() {
     local target="$1"
 
-    local serial=$(od -An -v -ta -j262407 -N9 "${target}" | sed 's/ //g')
-    local mac1=$(od -An -v -t x1 -j262184 -N6 "${target}" | sed 's/ //g')
-    local mac2=$(od -An -v -t x1 -j262190 -N6 "${target}" | sed 's/ //g')
+    local serial=$(od -An -v -ta -j $SERIAL_ADDR -N9 "${target}" | sed 's/ //g')
+    local mac1=$(od -An -v -t x1 -j $MAC1B_ADDR -N6 "${target}" | sed 's/ //g')
+    local mac2=$(od -An -v -t x1 -j $MAC2_ADDR -N6 "${target}" | sed 's/ //g')
 
     echo
     echo "     Image File: ${target}"
@@ -135,12 +144,26 @@ while [ $# -gt 0 ]; do
       SERIAL_NUM="$2"
       shift
       if [ -z "${SERIAL_NUM}" ]; then
+        if [ ! -x "${GENSERIAL}" ] ; then
+          echo "***"
+          echo "***  ERROR: bin/serialnum file not found"
+          echo '***         compile using: "make bin/serialnum"'
+          echo "***"
+          exit 8
+        fi
         SERIAL_NUM=$("${GENSERIAL}")
         echo
         echo "  generating new serial number: ${SERIAL_NUM}"
       fi
       ;;
     -g|--genserial)
+      if [ ! -x "${GENSERIAL}" ] ; then
+        echo "***"
+        echo "***  ERROR: bin/serialnum file not found"
+        echo '***         compile using: "make bin/serialnum"'
+        echo "***"
+        exit 8
+      fi
       eval "${GENSERIAL}"
       exit 0
       ;;
@@ -195,7 +218,9 @@ fi
 
 if [ -n "${MAC}" ]; then
     update_mac "${MAC}" "${TARGET}"
-elif [ -n "${SERIAL_NUM}" ]; then
+fi
+
+if [ -n "${SERIAL_NUM}" ]; then
     update_devid "${SERIAL_NUM}" "${TARGET}"
 else
     echo
