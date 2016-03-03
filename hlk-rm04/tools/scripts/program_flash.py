@@ -90,7 +90,9 @@ def get_flash_id():
         mp_out = subprocess.check_output([MINIPRO, '-q'])
         match = re.search(r'^Device Id: (0x[a-f0-9]*)$', mp_out, re.MULTILINE)
         found = match.group(1)
-        return int(found, 16)
+        val = int(found, 16)
+        if val == 0: raise
+        return val
     except:
         raise IOError('flash device programming failed, check connections and try again')
 

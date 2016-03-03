@@ -123,7 +123,7 @@ program: minipro
 	    exit 6; \
 	elif [ "$$rc" -eq "8" ] ; then \
 	    echo "********************************************************************************"; \
-	    echo " io error: Check Minipro and device connections and try again."; \
+	    echo " io error: Check Minipro and device connections then try again."; \
 	    echo "********************************************************************************"; \
 	    exit 8; \
 	else \
