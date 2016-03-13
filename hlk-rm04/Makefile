@@ -25,9 +25,10 @@ MAC2BIN          := $(OUTBIN)/mac2bin
 SERNUM           := $(OUTBIN)/serialnum
 TARGET           := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 OWRT_ROOT        := openwrt-master
-OWRT_SRC_URL     := https://github.com/openwrt/openwrt/archive/master.tar.gz
+OWRT_GITHUB_REPO := openwrt-mirror/openwrt
+OWRT_SRC_URL     := https://github.com/$(OWRT_GITHUB_REPO)/archive/master.tar.gz
 OWRT_FEEDS       := $(OWRT_ROOT)/feeds
-OWRT_VER         := $(shell wget -q -O- https://api.github.com/repos/openwrt/openwrt/commits\?per_page\=1 | sed -rn 's/\s*"message".*svn:\/\/svn.openwrt.org\/openwrt\/trunk@([0-9][0-9][0-9][0-9][0-9]).*/\1/p')
+OWRT_VER         := $(shell wget -q -O- https://api.github.com/repos/$(OWRT_GITHUB_REPO)/commits\?per_page\=1 | sed -rn 's/\s*"message".*svn:\/\/svn.openwrt.org\/openwrt\/trunk@([0-9][0-9][0-9][0-9][0-9]).*/\1/p')
 OWRT_CFG         := $(OWRT_ROOT)/.config
 OWRT_CACERT_SRC  := ca*certs/*_ca_public.cer
 OWRT_CACERT_TGT  := $(OWRT_ROOT)/package/utils/a140808/files
