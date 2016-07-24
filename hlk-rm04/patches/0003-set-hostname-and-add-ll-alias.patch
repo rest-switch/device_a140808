@@ -1,27 +1,29 @@
-From 0c13ddb7ca4f8b556d497a137be7b45d86e4624f Mon Sep 17 00:00:00 2001
+From 3e14bb379ad808ef86246dc91e0152121ba26ca3 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
-Date: Sat, 30 Jan 2016 14:06:01 +0000
+Date: Sun, 17 Jul 2016 12:59:22 -0400
 Subject: [PATCH 3/3] set hostname and add ll alias
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
- package/base-files/files/etc/config/system | 2 +-
+ package/base-files/files/etc/init.d/system | 2 +-
  package/base-files/files/etc/profile       | 3 +++
  2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/package/base-files/files/etc/config/system b/package/base-files/files/etc/config/system
-index 3dfbfc4..1e6dd3c 100644
---- a/package/base-files/files/etc/config/system
-+++ b/package/base-files/files/etc/config/system
-@@ -1,5 +1,5 @@
- config system
--	option hostname	OpenWrt
-+	option hostname	a140808
- 	option timezone	UTC
- 
- config timeserver ntp
+diff --git a/package/base-files/files/etc/init.d/system b/package/base-files/files/etc/init.d/system
+index 8c5f677..942004b 100755
+--- a/package/base-files/files/etc/init.d/system
++++ b/package/base-files/files/etc/init.d/system
+@@ -7,7 +7,7 @@ USE_PROCD=1
+ validate_system_section()
+ {
+ 	uci_validate_section system system "${1}" \
+-		'hostname:string:lede' \
++		'hostname:string:a140808' \
+ 		'conloglevel:uinteger' \
+ 		'buffersize:uinteger' \
+ 		'timezone:string:UTC' \
 diff --git a/package/base-files/files/etc/profile b/package/base-files/files/etc/profile
-index ad8fe12..292254b 100644
+index f2def7f..2b5819c 100644
 --- a/package/base-files/files/etc/profile
 +++ b/package/base-files/files/etc/profile
 @@ -11,6 +11,9 @@ export HOME=$(grep -e "^${USER:-root}:" /etc/passwd | cut -d ":" -f 6)
@@ -31,9 +33,9 @@ index ad8fe12..292254b 100644
 +alias l='ls -CF'
 +alias ll='ls -alF'
 +
- [ -x /bin/more ] || alias more=less
- [ -x /usr/bin/vim ] && alias vi=vim || alias vim=vi
+ [ "$TERM" = "xterm" ] && export PS1='\[\e]0;\u@\h: \w\a\]'$PS1
  
+ [ -x /bin/more ] || alias more=less
 -- 
-2.5.0
+2.7.4
 

@@ -20,7 +20,7 @@
 
 MYFILE=$(readlink -f "$0")
 MYDIR=$(dirname "${MYFILE}")
-OWRT_ROOT=$(readlink -f "${MYDIR}/../../openwrt-master")
+OWRT_ROOT=$(readlink -f "${MYDIR}/../../lede-project")
 PW_FILE="${OWRT_ROOT}/package/base-files/files/etc/shadow"
 SSH_CERT_BITS=4096
 SSH_CERT_PUB="${OWRT_ROOT}/package/network/services/dropbear/files/authorized_keys"

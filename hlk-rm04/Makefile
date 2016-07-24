@@ -16,6 +16,7 @@
 # Author: John Clark (johnc@restswitch.com)
 #
 
+
 OUTBIN           := bin
 CFG_DIFF         := patches/diffconfig
 PATCHES          := $(sort $(wildcard patches/*.patch))
@@ -24,15 +25,14 @@ MAC              := $(strip $(mac))
 MAC2BIN          := $(OUTBIN)/mac2bin
 SERNUM           := $(OUTBIN)/serialnum
 TARGET           := $(OUTBIN)/openwrt-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
-OWRT_ROOT        := openwrt-master
-OWRT_GITHUB_REPO := openwrt-mirror/openwrt
-OWRT_SRC_URL     := https://github.com/$(OWRT_GITHUB_REPO)/archive/master.tar.gz
-OWRT_FEEDS       := $(OWRT_ROOT)/feeds
-OWRT_VER         := $(shell wget -q -O- https://api.github.com/repos/$(OWRT_GITHUB_REPO)/commits\?per_page\=1 | sed -rn 's/\s*"message".*svn:\/\/svn.openwrt.org\/openwrt\/trunk@([0-9][0-9][0-9][0-9][0-9]).*/\1/p')
-OWRT_CFG         := $(OWRT_ROOT)/.config
-OWRT_CACERT_SRC  := ca*certs/*_ca_public.cer
-OWRT_CACERT_TGT  := $(OWRT_ROOT)/package/utils/a140808/files
-OWRT_TGT         := $(OWRT_ROOT)/bin/ramips/openwrt-$(shell cat "$(OWRT_ROOT)/version")-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
+LEDE_ROOT        := lede-project
+LEDE_SRC_URL     := https://github.com/lede-project/source/archive/master.tar.gz
+LEDE_FEEDS       := $(LEDE_ROOT)/feeds
+LEDE_VER         := $(shell echo $$(($$(wget -q -O- https://api.github.com/repos/lede-project/source/commits\?since\=2016-07-16T00:00:00Z | grep \"commit\":\ { | wc -l) + 1003)))
+LEDE_CFG         := $(LEDE_ROOT)/.config
+LEDE_CACERT_SRC  := ca*certs/*_ca_public.cer
+LEDE_CACERT_TGT  := $(LEDE_ROOT)/package/utils/a140808/files
+LEDE_TGT         := $(LEDE_ROOT)/bin/targets/ramips/rt305x/openwrt-$(shell cat "$(LEDE_ROOT)/version")-ramips-rt305x-hlk-rm04-squashfs-sysupgrade.bin
 SSH_TOOL         := tools/scripts/ssh_access.sh
 FLASH_TOOL       := tools/scripts/program_flash.py
 MINIPRO_ROOT     := tools/minipro
@@ -46,9 +46,9 @@ SERIAL_ADDR      := $(shell echo -n $$((0x40400)))
 .DEFAULT all: target
 
 target: | config cacerts ssh_check
-	$(MAKE) -C "$(OWRT_ROOT)"
+	$(MAKE) -C "$(LEDE_ROOT)" SOURCE_DATE_EPOCH=$$(date +%s)
 	@if [ ! -d "$(OUTBIN)" ]; then mkdir "$(OUTBIN)"; fi
-	@cp "$(OWRT_TGT)" "$(TARGET)"
+	@cp "$(LEDE_TGT)" "$(TARGET)"
 
 image: | $(TARGET) $(SERNUM) $(MAC2BIN)
     ifeq ("","$(MAC)")
@@ -136,41 +136,42 @@ program: minipro
 	    exit 9; \
 	fi )
 
-$(OWRT_ROOT):
+$(LEDE_ROOT):
 	@echo
-	@echo fetching openwrt...
-	wget -O- "$(OWRT_SRC_URL)" | tar xz
-	echo "r$(OWRT_VER)" > "$(OWRT_ROOT)/version"
+	@echo fetching lede project...
+	rm -rf $(LEDE_ROOT) ; mkdir $(LEDE_ROOT)
+	wget -O- "$(LEDE_SRC_URL)" | tar xz -C $(LEDE_ROOT) --strip-components 1
+	echo "r$(LEDE_VER)" > "$(LEDE_ROOT)/version"
 
-feeds: $(OWRT_FEEDS)
-$(OWRT_FEEDS): $(OWRT_ROOT)
+feeds: $(LEDE_FEEDS)
+$(LEDE_FEEDS): $(LEDE_ROOT)
 	@echo
-	@echo applying feeds to openwrt...
-	"$(OWRT_ROOT)/scripts/feeds" update -a
-	"$(OWRT_ROOT)/scripts/feeds" install -a
-	@rm -f "$(OWRT_CFG)" # remove .config file that the feeds gen
+	@echo applying feeds to lede project...
+	"$(LEDE_ROOT)/scripts/feeds" update -a
+	"$(LEDE_ROOT)/scripts/feeds" install -a
+	@rm -f "$(LEDE_CFG)" # remove .config file that the feeds gen
 
 patch: feeds
 	@echo
-	@echo applying a140808 patches to openwrt...
-	$(foreach patch,$(PATCHES),if patch --dry-run -N -p1 -d "$(OWRT_ROOT)" < "$(patch)" 2>/dev/null; then patch -p1 -d "$(OWRT_ROOT)" < "$(patch)"; fi;)
-	cp -R "files/." "$(OWRT_ROOT)"
+	@echo applying a140808 patches to lede project...
+	$(foreach patch,$(PATCHES),if patch --dry-run -N -p1 -d "$(LEDE_ROOT)" < "$(patch)" 2>&1 >/dev/null; then patch -p1 -d "$(LEDE_ROOT)" < "$(patch)"; fi;)
+	cp -R "files/." "$(LEDE_ROOT)"
 
 cacerts: patch
-    ifneq ($(wildcard $(OWRT_CACERT_SRC)),)
+    ifneq ($(wildcard $(LEDE_CACERT_SRC)),)
 	@echo copying CA certificate files...
-	@mkdir -p "$(OWRT_CACERT_TGT)"
-	@$(foreach ca_file,$(wildcard $(OWRT_CACERT_SRC)),cp $(ca_file) "$(OWRT_CACERT_TGT)/$(basename $(notdir $(ca_file))).pem";)
+	@mkdir -p "$(LEDE_CACERT_TGT)"
+	@$(foreach ca_file,$(wildcard $(LEDE_CACERT_SRC)),cp $(ca_file) "$(LEDE_CACERT_TGT)/$(basename $(notdir $(ca_file))).pem";)
     else
 	@echo no CA certificate files present
     endif
 
-config: $(OWRT_CFG)
-$(OWRT_CFG): patch
+config: $(LEDE_CFG)
+$(LEDE_CFG): patch
 	@echo
-	@echo generating openwrt .config file...
-	cat "$(CFG_DIFF)" > "$(OWRT_CFG)"
-	$(MAKE) -C "$(OWRT_ROOT)" defconfig
+	@echo generating lede project .config file...
+	cat "$(CFG_DIFF)" > "$(LEDE_CFG)"
+	$(MAKE) -C "$(LEDE_ROOT)" defconfig
 
 $(SERNUM):
 	$(MAKE) -C "tools/serialnum"
@@ -193,7 +194,7 @@ $(MINIPRO):
 clean distclean:
 	$(MAKE) -C "tools/serialnum" clean
 	$(MAKE) -C "tools/mac2bin" clean
-	@if [ -d "$(OWRT_ROOT)" ]; then $(MAKE) -C "$(OWRT_ROOT)" $@; fi
+	@if [ -d "$(LEDE_ROOT)" ]; then $(MAKE) -C "$(LEDE_ROOT)" $@; fi
 	rm -rf "$(OUTBIN)"
 
 ifeq ("none","$(strip $(ssh))")
@@ -243,5 +244,4 @@ ssh_safe: ssh_pw ssh_cert
 	exit 14 )
 
 .PHONY: all target image program feeds patch cacerts config minipro clean distclean ssh_none ssh_cert ssh_pw ssh_safe
-
 
