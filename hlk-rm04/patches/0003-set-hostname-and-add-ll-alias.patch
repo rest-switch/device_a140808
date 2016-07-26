@@ -1,14 +1,28 @@
-From 3e14bb379ad808ef86246dc91e0152121ba26ca3 Mon Sep 17 00:00:00 2001
+From 8dbb025d41682aadc09fb781dd1f0e78710299f1 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
 Date: Sun, 17 Jul 2016 12:59:22 -0400
 Subject: [PATCH 3/3] set hostname and add ll alias
 
 Signed-off-by: John Clark <inindev@gmail.com>
 ---
- package/base-files/files/etc/init.d/system | 2 +-
- package/base-files/files/etc/profile       | 3 +++
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ package/base-files/files/bin/config_generate | 2 +-
+ package/base-files/files/etc/init.d/system   | 2 +-
+ package/base-files/files/etc/profile         | 3 +++
+ 3 files changed, 5 insertions(+), 2 deletions(-)
 
+diff --git a/package/base-files/files/bin/config_generate b/package/base-files/files/bin/config_generate
+index bc2dbba..53c38e4 100755
+--- a/package/base-files/files/bin/config_generate
++++ b/package/base-files/files/bin/config_generate
+@@ -226,7 +226,7 @@ generate_static_system() {
+ 	uci -q batch <<-EOF
+ 		delete system.@system[0]
+ 		add system system
+-		set system.@system[-1].hostname='lede'
++		set system.@system[-1].hostname='a140808'
+ 		set system.@system[-1].timezone='UTC'
+ 		set system.@system[-1].ttylogin='0'
+ 		set system.@system[-1].log_size='64'
 diff --git a/package/base-files/files/etc/init.d/system b/package/base-files/files/etc/init.d/system
 index 8c5f677..942004b 100755
 --- a/package/base-files/files/etc/init.d/system
