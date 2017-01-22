@@ -1,6 +1,6 @@
-From 8dbb025d41682aadc09fb781dd1f0e78710299f1 Mon Sep 17 00:00:00 2001
+From 028b6789ceffd6270ca74ef5ec8e0c4f75547f6e Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
-Date: Sun, 17 Jul 2016 12:59:22 -0400
+Date: Sun, 22 Jan 2017 21:53:53 +0000
 Subject: [PATCH 3/3] set hostname and add ll alias
 
 Signed-off-by: John Clark <inindev@gmail.com>
@@ -11,7 +11,7 @@ Signed-off-by: John Clark <inindev@gmail.com>
  3 files changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/package/base-files/files/bin/config_generate b/package/base-files/files/bin/config_generate
-index bc2dbba..53c38e4 100755
+index a6e7a9c..b26aa31 100755
 --- a/package/base-files/files/bin/config_generate
 +++ b/package/base-files/files/bin/config_generate
 @@ -226,7 +226,7 @@ generate_static_system() {
@@ -37,7 +37,7 @@ index 8c5f677..942004b 100755
  		'buffersize:uinteger' \
  		'timezone:string:UTC' \
 diff --git a/package/base-files/files/etc/profile b/package/base-files/files/etc/profile
-index f2def7f..2b5819c 100644
+index 3eda09b..32af5cd 100644
 --- a/package/base-files/files/etc/profile
 +++ b/package/base-files/files/etc/profile
 @@ -11,6 +11,9 @@ export HOME=$(grep -e "^${USER:-root}:" /etc/passwd | cut -d ":" -f 6)

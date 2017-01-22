@@ -1,6 +1,6 @@
-From 4967e3c8359343b68f82d72267251a486c47f3f9 Mon Sep 17 00:00:00 2001
+From 1e7286fdfa78774eb66c65d3b4b247f4ca720f17 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
-Date: Sun, 17 Jul 2016 12:54:59 -0400
+Date: Sun, 22 Jan 2017 21:48:59 +0000
 Subject: [PATCH 2/3] rt2x00: use mac2 for wireless
 
 Signed-off-by: John Clark <inindev@gmail.com>

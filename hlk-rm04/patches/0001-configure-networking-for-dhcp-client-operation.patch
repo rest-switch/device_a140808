@@ -1,6 +1,6 @@
-From c0ed7dde7bc6866b3c0db6331ee730335a1a63b0 Mon Sep 17 00:00:00 2001
+From 2ea0964ad0bf49b24148c8d02db53c40eab0dc32 Mon Sep 17 00:00:00 2001
 From: John Clark <inindev@gmail.com>
-Date: Sun, 17 Jul 2016 12:52:44 -0400
+Date: Sun, 22 Jan 2017 21:43:05 +0000
 Subject: [PATCH 1/3] configure networking for dhcp client operation
 
 Signed-off-by: John Clark <inindev@gmail.com>
@@ -13,7 +13,7 @@ Signed-off-by: John Clark <inindev@gmail.com>
  delete mode 100644 target/linux/ramips/base-files/lib/preinit/07_set_preinit_iface_ramips
 
 diff --git a/package/base-files/files/bin/config_generate b/package/base-files/files/bin/config_generate
-index 7f34eec..bc2dbba 100755
+index f9b4e5c..a6e7a9c 100755
 --- a/package/base-files/files/bin/config_generate
 +++ b/package/base-files/files/bin/config_generate
 @@ -16,8 +16,8 @@ generate_static_network() {
@@ -43,21 +43,21 @@ index 7f34eec..bc2dbba 100755
  	uci -q batch <<-EOF
  		delete network.$1
 diff --git a/target/linux/ramips/base-files/etc/board.d/02_network b/target/linux/ramips/base-files/etc/board.d/02_network
-index c1c5f81..aaad8b0 100755
+index 91f1aaa..2737ccd 100755
 --- a/target/linux/ramips/base-files/etc/board.d/02_network
 +++ b/target/linux/ramips/base-files/etc/board.d/02_network
-@@ -70,7 +70,6 @@ ramips_setup_interfaces()
+@@ -79,7 +79,6 @@ ramips_setup_interfaces()
  	dir-610-a1|\
  	dir-615-h1|\
  	firewrt|\
 -	hlk-rm04|\
+ 	mac1200rv2|\
  	miwifi-mini|\
  	miwifi-nano|\
- 	mt7621|\
-@@ -167,6 +166,12 @@ ramips_setup_interfaces()
- 	cs-qr10|\
+@@ -187,6 +186,12 @@ ramips_setup_interfaces()
  	d105|\
  	dch-m225|\
+ 	ex2700|\
 +	hlk-rm04)
 +		ucidef_add_switch "switch0"
 +		ucidef_add_switch_attr "switch0" "enable" "false"
@@ -67,7 +67,7 @@ index c1c5f81..aaad8b0 100755
  	hpm|\
  	mzk-ex300np|\
  	mzk-ex750np|\
-@@ -271,7 +276,6 @@ ramips_setup_macs()
+@@ -312,7 +317,6 @@ ramips_setup_macs()
  	dir-620-a1|\
  	esr-9753|\
  	freestation5|\
@@ -75,9 +75,9 @@ index c1c5f81..aaad8b0 100755
  	mpr-a1|\
  	psr-680w|\
  	sl-r7205|\
-@@ -305,6 +309,8 @@ ramips_setup_macs()
- 		[ -n "$lan_mac" ] || lan_mac=$(cat /sys/class/net/eth0/address)
- 		wan_mac=$(macaddr_add "$lan_mac" 1)
+@@ -351,6 +355,8 @@ ramips_setup_macs()
+ 	kng_rc)
+ 		wan_mac=$(mtd_get_mac_binary factory 40)
  		;;
 +	hlk-rm04)
 +		;;
@@ -120,10 +120,10 @@ index 452b1b2..0000000
 -
 -boot_hook_add preinit_main ramips_set_preinit_iface
 diff --git a/target/linux/ramips/dts/HLKRM04.dts b/target/linux/ramips/dts/HLKRM04.dts
-index 2f4e435..8ddfec7 100644
+index cbd8609..c76077e 100644
 --- a/target/linux/ramips/dts/HLKRM04.dts
 +++ b/target/linux/ramips/dts/HLKRM04.dts
-@@ -107,7 +107,7 @@
+@@ -109,7 +109,7 @@
  };
  
  &ethernet {
